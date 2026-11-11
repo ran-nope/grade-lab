@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+<title id="title">Grade Lab: look beyond the average</title>
+<desc id="desc">Actual held-out predictions from the repeat-G2 baseline. Five zero-grade cases are orange: one correct at zero, and four misses, including two overlapping at predicted nine. Marker area shows record count.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#182442"/><stop offset="1" stop-color="#0f1730"/></linearGradient></defs>
+<rect width="1280" height="360" fill="url(#bg)"/>
+<g font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+<text x="70" y="100" font-size="15" letter-spacing="3" fill="#a4b6e6">AN OPEN MACHINE LEARNING LAB</text>
+<text x="66" y="183" font-size="78" font-weight="700" fill="white">Grade Lab</text>
+<text x="70" y="230" font-size="26" fill="#d8e0f5">Look beyond the average.</text>
+<text x="70" y="274" font-size="17" fill="#f4a261">1.00 average error. Four large zero-grade misses.</text>
+<text x="70" y="311" font-size="14" fill="#a4b6e6">Real predictions · Model comparison · Uncertainty checks</text>
+
+<line x1="840" y1="290" x2="1190" y2="290" stroke="#2b3a64" stroke-dasharray="2 6"/>
+<text x="840.0" y="310" text-anchor="middle" fill="#a4b6e6" font-size="12">0</text>
+<text x="821" y="294" text-anchor="end" fill="#a4b6e6" font-size="12">0</text>
+<line x1="840" y1="235" x2="1190" y2="235" stroke="#2b3a64" stroke-dasharray="2 6"/>
+<text x="927.5" y="310" text-anchor="middle" fill="#a4b6e6" font-size="12">5</text>
+<text x="821" y="239" text-anchor="end" fill="#a4b6e6" font-size="12">5</text>
+<line x1="840" y1="180" x2="1190" y2="180" stroke="#2b3a64" stroke-dasharray="2 6"/>
+<text x="1015.0" y="310" text-anchor="middle" fill="#a4b6e6" font-size="12">10</text>
+<text x="821" y="184" text-anchor="end" fill="#a4b6e6" font-size="12">10</text>
+<line x1="840" y1="125" x2="1190" y2="125" stroke="#2b3a64" stroke-dasharray="2 6"/>
+<text x="1102.5" y="310" text-anchor="middle" fill="#a4b6e6" font-size="12">15</text>
+<text x="821" y="129" text-anchor="end" fill="#a4b6e6" font-size="12">15</text>
+<line x1="840" y1="70" x2="1190" y2="70" stroke="#2b3a64" stroke-dasharray="2 6"/>
+<text x="1190.0" y="310" text-anchor="middle" fill="#a4b6e6" font-size="12">20</text>
+<text x="821" y="74" text-anchor="end" fill="#a4b6e6" font-size="12">20</text>
+<line x1="840" y1="290" x2="1190" y2="70" stroke="#a4b6e6" stroke-dasharray="6 5"/>
+<circle cx="840.0" cy="290.0" r="4.00" fill="#f4a261" opacity="0.78"><title>Actual 0, predicted 0: 1 students</title></circle>
+<circle cx="840.0" cy="290.0" r="8.00" fill="none" stroke="#f4a261" stroke-width="1.5"/>
+<circle cx="840.0" cy="213.0" r="4.00" fill="#f4a261" opacity="0.78"><title>Actual 0, predicted 7: 1 students</title></circle>
+<circle cx="840.0" cy="213.0" r="8.00" fill="none" stroke="#f4a261" stroke-width="1.5"/>
+<circle cx="840.0" cy="202.0" r="4.00" fill="#f4a261" opacity="0.78"><title>Actual 0, predicted 8: 1 students</title></circle>
+<circle cx="840.0" cy="202.0" r="8.00" fill="none" stroke="#f4a261" stroke-width="1.5"/>
+<circle cx="840.0" cy="191.0" r="5.66" fill="#f4a261" opacity="0.78"><title>Actual 0, predicted 9: 2 students</title></circle>
+<circle cx="840.0" cy="191.0" r="9.66" fill="none" stroke="#f4a261" stroke-width="1.5"/>
+<circle cx="927.5" cy="235.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 5, predicted 5: 3 students</title></circle>
+<circle cx="927.5" cy="224.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 5, predicted 6: 1 students</title></circle>
+<circle cx="945.0" cy="235.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 6, predicted 5: 2 students</title></circle>
+<circle cx="945.0" cy="224.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 6, predicted 6: 2 students</title></circle>
+<circle cx="945.0" cy="213.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 6, predicted 7: 1 students</title></circle>
+<circle cx="945.0" cy="202.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 6, predicted 8: 1 students</title></circle>
+<circle cx="962.5" cy="213.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 7, predicted 7: 1 students</title></circle>
+<circle cx="980.0" cy="213.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 8, predicted 7: 2 students</title></circle>
+<circle cx="980.0" cy="202.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 8, predicted 8: 1 students</title></circle>
+<circle cx="980.0" cy="191.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 8, predicted 9: 3 students</title></circle>
+<circle cx="997.5" cy="213.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 9, predicted 7: 1 students</title></circle>
+<circle cx="997.5" cy="191.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 9, predicted 9: 3 students</title></circle>
+<circle cx="997.5" cy="180.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 9, predicted 10: 1 students</title></circle>
+<circle cx="1015.0" cy="202.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 10, predicted 8: 3 students</title></circle>
+<circle cx="1015.0" cy="191.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 10, predicted 9: 3 students</title></circle>
+<circle cx="1015.0" cy="180.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 10, predicted 10: 3 students</title></circle>
+<circle cx="1015.0" cy="169.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 10, predicted 11: 1 students</title></circle>
+<circle cx="1015.0" cy="158.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 10, predicted 12: 1 students</title></circle>
+<circle cx="1032.5" cy="180.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 11, predicted 10: 1 students</title></circle>
+<circle cx="1032.5" cy="169.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 11, predicted 11: 3 students</title></circle>
+<circle cx="1032.5" cy="158.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 11, predicted 12: 1 students</title></circle>
+<circle cx="1050.0" cy="180.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 12, predicted 10: 1 students</title></circle>
+<circle cx="1050.0" cy="169.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 12, predicted 11: 2 students</title></circle>
+<circle cx="1050.0" cy="158.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 12, predicted 12: 1 students</title></circle>
+<circle cx="1050.0" cy="147.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 12, predicted 13: 1 students</title></circle>
+<circle cx="1067.5" cy="147.0" r="8.00" fill="#8199ff" opacity="0.78"><title>Actual 13, predicted 13: 4 students</title></circle>
+<circle cx="1067.5" cy="136.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 13, predicted 14: 1 students</title></circle>
+<circle cx="1085.0" cy="158.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 14, predicted 12: 1 students</title></circle>
+<circle cx="1085.0" cy="147.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 14, predicted 13: 2 students</title></circle>
+<circle cx="1085.0" cy="136.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 14, predicted 14: 3 students</title></circle>
+<circle cx="1102.5" cy="147.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 15, predicted 13: 1 students</title></circle>
+<circle cx="1102.5" cy="136.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 15, predicted 14: 2 students</title></circle>
+<circle cx="1102.5" cy="125.0" r="10.58" fill="#8199ff" opacity="0.78"><title>Actual 15, predicted 15: 7 students</title></circle>
+<circle cx="1120.0" cy="125.0" r="6.93" fill="#8199ff" opacity="0.78"><title>Actual 16, predicted 15: 3 students</title></circle>
+<circle cx="1120.0" cy="114.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 16, predicted 16: 1 students</title></circle>
+<circle cx="1137.5" cy="114.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 17, predicted 16: 1 students</title></circle>
+<circle cx="1137.5" cy="103.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 17, predicted 17: 2 students</title></circle>
+<circle cx="1155.0" cy="92.0" r="4.00" fill="#8199ff" opacity="0.78"><title>Actual 18, predicted 18: 1 students</title></circle>
+<circle cx="1172.5" cy="81.0" r="5.66" fill="#8199ff" opacity="0.78"><title>Actual 19, predicted 19: 2 students</title></circle>
+<text x="1015" y="337" text-anchor="middle" font-size="13" fill="#a4b6e6">actual final grade</text>
+<text x="786" y="180" text-anchor="middle" font-size="13" fill="#a4b6e6" transform="rotate(-90 786 180)">predicted grade</text>
+<text x="840" y="38" font-size="13" fill="#f4a261">Orange: zero final grades (5 records)</text>
+<text x="840" y="55" font-size="11" fill="#a4b6e6">79 test records · overlapping records grouped</text>
+</g></svg>
