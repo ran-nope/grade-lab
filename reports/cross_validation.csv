@@ -1,0 +1,12 @@
+experiment,model,cv_mae,cv_std
+Earlier grades,Mean baseline,3.4028651224982744,0.6293192137033018
+Earlier grades,Ridge regression,1.1466576838190035,0.2247809227317685
+Earlier grades,Small decision tree,1.412003699037597,0.2985374142572731
+Earlier grades,Previous-grade baseline,0.9529265873015873,0.24500797060399082
+Study context only,Mean baseline,3.4028651224982744,0.6293192137033018
+Study context only,Ridge regression,3.2614770915135756,0.5100288796574086
+Study context only,Small decision tree,3.2885247061551652,0.4434636433537794
+Grades + context,Mean baseline,3.4028651224982744,0.6293192137033018
+Grades + context,Ridge regression,1.144742452943849,0.2587941213103581
+Grades + context,Small decision tree,1.412003699037597,0.2985374142572731
+Grades + context,Previous-grade baseline,0.9529265873015873,0.24500797060399082

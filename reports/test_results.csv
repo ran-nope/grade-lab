@@ -1,0 +1,4 @@
+experiment,selected_model,test_mae,test_rmse,test_r2
+Earlier grades,Previous-grade baseline,1.0,2.0715065147149136,0.7907276591754446
+Study context only,Ridge regression,3.4987234667438556,4.400457361869762,0.05564592266067225
+Grades + context,Previous-grade baseline,1.0,2.0715065147149136,0.7907276591754446
