@@ -1,0 +1,9 @@
+{
+  "comparison": "context-only minus earlier-grades MAE",
+  "estimate": 2.4987234667438556,
+  "ci_low": 2.0305678948125747,
+  "ci_high": 2.9728104592894335,
+  "replicates": 10000,
+  "bootstrap_seed": 2026,
+  "test_rows": 79
+}
