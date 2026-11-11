@@ -50,3 +50,7 @@ Only claim understanding after you can answer the questions below. Replace this 
 ## First independent change
 
 Add `DummyRegressor(strategy='median')` to `candidates`. Predict how it will compare with the mean baseline, then rerun the experiment. Record your expectation, the actual result, and your explanation. Treat the existing held-out set as previously inspected; use fresh validation for any later performance claims.
+
+## New: compare predictions and uncertainty
+
+In the Prediction studio, switch between the previous-grade rule, ridge, and tree. Hold G2 fixed and vary G1: ridge changes, while the baseline deliberately does not. Trees can remain flat inside a leaf. Read reports/ROBUSTNESS.md to distinguish fixed-model bootstrap uncertainty from sensitivity to the train/test split. Neither establishes performance at a new school.

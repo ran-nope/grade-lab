@@ -1,115 +1,178 @@
-# Grade Lab 🧪
+<div align="center">
 
-**Grades are signals. Not destinies.**
+<img src="assets/banner.svg" alt="Grade Lab banner: predicted against actual final grades, with zero-grade cases highlighted and overlapping records grouped" width="100%">
 
-A beginner-friendly machine learning lab that predicts final mathematics grades, compares useful baselines, and asks a more interesting question: **how much of the prediction comes from simply knowing earlier grades?**
+<br>
 
-![Experiment overview](reports/experiment.png)
+[![License: MIT](https://img.shields.io/badge/license-MIT-4361ee.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/python-3.12-182442.svg)
+![Streamlit app](https://img.shields.io/badge/app-Streamlit-139c90.svg)
+[![Checks](https://github.com/ran-nope/grade-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/ran-nope/grade-lab/actions/workflows/tests.yml)
 
-## What makes this different
 
-- **Prediction studio:** change two earlier grades and explore the model's response. A nearby-example count flags poorly supported inputs.
-- **Information experiment:** compare earlier grades, study context, and both together using identical splits.
-- **Evidence room:** inspect model selection, held-out results, and errors on zero versus nonzero final grades.
-- **Strong baseline:** a model must compete with simply repeating the second-period grade.
-- **Learning trail:** an executed notebook and plain-language walkthrough explain the whole process.
+</div>
 
-This is a completed educational prototype built with AI assistance. Its value as a learning project comes from reading, reproducing, and extending it—not claiming independent authorship of generated code.
+Grade Lab predicts final mathematics grades for 395 secondary-school students, then asks a more useful question: how much of that prediction comes from simply knowing the grades they already had? On the original split, repeating the second-period grade beat the ridge and tree candidates in training cross-validation. The app lets you compare their predictions and see where the winning rule fails.
 
-## Run locally
+## The result in two tables
 
-Use Python 3.12. From this folder:
+Test MAE is the average miss in grade points on a 0–20 scale, measured on 79 students the models never saw.
 
-```bash
+| Approach | Test MAE | 95% bootstrap interval |
+|---|---:|---:|
+| Repeat the second-period grade (G2) | 1.00 | 0.63–1.43 |
+| Ridge on study time, past failures and travel time | 3.50 | 2.93–4.09 |
+
+These compare different input sets. The intervals resample test rows with the fitted models held fixed; they are not uncertainty ranges for an individual student.
+
+A good average can hide bad misses. Split the held-out students by whether their final grade was zero:
+
+| Group | Students | MAE |
+|---|---|---|
+| Final grade of zero | 5 | 6.60 |
+| Everyone else | 74 | 0.62 |
+
+One of the five zero-grade cases was predicted correctly. Four were missed, including two at the same plotted point, (0, 9). The data does not establish why those grades were zero. All cases stay in the analysis.
+
+<div align="center">
+<img src="assets/app-prediction-studio.jpg" alt="Grade Lab Prediction studio with a model selector, grade sliders, and comparison curves" width="100%">
+</div>
+
+
+
+## A tour of the app
+
+The Streamlit app has three tabs and native light/dark themes. [Dark-mode preview](assets/app-dark.jpg).
+
+| Tab | What you do there |
+|---|---|
+| 01 Prediction studio | Choose baseline, ridge, or tree; compare all estimates; vary G1 or G2 in the scenario curves. The baseline clearly explains why G1 does not change its estimate. Nearby-example counts indicate data support, not confidence. |
+| 02 Evidence room | Inspect three feature experiments, the equality line and highlighted zero-grade cases, bootstrap intervals, and all ten additional splits. |
+| 03 Learn the project | Six short steps that walk through the whole method, from the question to the limits. |
+
+## Run it
+
+You need Python 3.12.
+
+```
 python -m venv .venv
 ```
 
-Activate on Windows PowerShell:
+Activate the environment. On Windows PowerShell:
 
-```powershell
+```
 .venv\Scripts\Activate.ps1
 ```
 
-Or on macOS / Linux:
+On macOS or Linux:
 
-```bash
+```
 source .venv/bin/activate
 ```
 
 Then:
 
-```bash
+```
 pip install -r requirements.txt
 python grade_lab.py
+python robustness.py
 streamlit run app.py
 ```
 
-If PowerShell blocks activation, use `.venv\Scripts\python.exe -m pip install -r requirements.txt` and `.venv\Scripts\python.exe -m streamlit run app.py` instead. No policy changes are needed.
+If PowerShell blocks activation, skip it and call the interpreter directly: `.venv\Scripts\python.exe -m pip install -r requirements.txt`, then `.venv\Scripts\python.exe -m streamlit run app.py`. No policy changes are needed.
 
-The public mathematics CSV is bundled with attribution. If it is missing, the training script downloads it from UCI. No accounts, keys, or personal student uploads are needed.
+The mathematics CSV is bundled with attribution. If the file is missing, the training script downloads it from UCI. There are no accounts, keys or uploads.
 
-## Results and methodology
+## How the experiment works
 
-**Main finding:** the previous-grade baseline won training cross-validation for both grade-based experiments. On 79 held-out records, its MAE was **1.00 point**, versus **3.50 points** for the selected context-only ridge model. Error was much larger on the five zero-final-grade cases (**6.60 points**) than on the other 74 cases (**0.62 points**). A good overall average can hide serious misses.
+```mermaid
+flowchart LR
+    A["395 maths records"] --> B["79 held out (seed 42)"]
+    A --> C["316 for development"]
+    C --> D["5-fold cross-validation, scored by MAE"]
+    D --> E["One model picked per feature set"]
+    B --> F["Evaluate selected models on test rows"]
+    E --> F
+    F --> G["Reports and Streamlit app"]
+```
 
-See [the measured results](reports/RESULTS.md), [all training CV scores](reports/cross_validation.csv), and [held-out predictions](reports/held_out_predictions.csv).
+Only the 395 mathematics records are used. The Portuguese-language file is left out because some students appear in both. Scaling happens inside each regression pipeline, so validation folds never influence preprocessing. The default baseline is the original selected grade-based approach. Studio alternatives are fitted on the same training rows and are shown for exploration; selecting one does not change the reported experiment winner.
 
-1. Use only the 395 mathematics records. Do not mix the Portuguese subject data; students can overlap between subjects.
-2. Reserve 79 records for testing with seed 42; use the remaining 316 for development.
-3. Within training, compare fixed candidate models with shuffled five-fold cross-validation, scored by MAE.
-4. Fit scaling inside each regression pipeline so validation folds cannot influence preprocessing.
-5. Select one model per feature set using training CV scores, then evaluate on the untouched test set.
-6. Keep the evaluated training-only model in the demo. Scenario estimates and reported metrics refer to the same fitted model.
+<details>
+<summary>Model settings and what the metrics mean</summary>
 
-Ridge uses alpha=10. The tree uses depth=3 and at least 15 samples per leaf. These are fixed modest-complexity choices, not a test-set hyperparameter search. Raw predictions are evaluated and displayed without clipping. MAE is measured in grade points; it is neither accuracy percentage nor an individual uncertainty interval. CV standard deviation is descriptive fold variation, not a confidence interval.
+<br>
 
-## Honest limitations
+Ridge uses alpha=10. The decision tree uses depth 3 and at least 15 samples per leaf. These are fixed, modest choices and were not tuned against the test set. Predictions are shown raw, without clipping to 0–20.
 
-- Historical records from two Portuguese schools cannot establish performance at other schools, in other countries, or today. The random split estimates within-sample generalization, not future-time or cross-school generalization.
-- G1 and G2 are earlier grading-period scores. This is a prediction after the second period, not an early-term warning system.
-- Context inputs are study time, past failures, and travel time. Their questionnaire measurement timing is not verified; context experiments are retrospective associations.
-- End-of-course absences and sensitive demographic fields are excluded. Excluding these fields does not establish fairness.
-- Zero final grades are retained. We do not infer why those grades occurred.
-- Changing a slider changes a model input, not the world. Scenario curves are not causal advice.
-- Nearby-example counts are a simple support check, not a statistical uncertainty estimate.
-- Do not use this demo for admissions, grading, ranking students, or allocating educational opportunities.
+MAE is measured in grade points. It is not an accuracy percentage and it is not an uncertainty interval for any one student. The cross-validation standard deviation describes variation between folds and is not a confidence interval.
 
-## Learn and extend
+</details>
 
-Start with [LEARNING_GUIDE.md](LEARNING_GUIDE.md), then open [student_performance.ipynb](student_performance.ipynb). Read the notebook's saved outputs without installing anything, or execute it from the repository root.
+Full numbers: [original results](reports/RESULTS.md), [training CV scores](reports/cross_validation.csv), [held-out predictions](reports/held_out_predictions.csv), and [experiment chart](reports/experiment.png).
 
-Useful next experiments:
+## How stable is the result?
 
-1. Add a median baseline and explain why MAE can favor it over a mean baseline.
-2. Evaluate transfer between schools using a new explicitly defined evaluation protocol.
-3. Add prediction intervals using a separate calibration split and measure their held-out coverage.
-4. Investigate how results vary over prespecified random seeds without choosing the best seed.
+The original split stays unchanged. Two supplementary checks make its limits clearer:
 
-Do not tune against this report's test results and continue calling the same test set untouched.
+- **Test-row uncertainty:** 10,000 paired bootstrap resamples, seed 2026. The context-minus-grades MAE gap is reported with its paired interval in [ROBUSTNESS.md](reports/ROBUSTNESS.md). This assumes IID rows and omits retraining, selection, school clustering, and distribution shifts.
+- **Split sensitivity:** ten fixed seeds, each rerunning training-only model selection. Grade-based MAE ranges from **0.66 to 1.23**; context-only MAE ranges from **2.97 to 3.53**. Every run is published in [split_sensitivity.csv](reports/split_sensitivity.csv).
+
+The extra checks were added after reviewing the first result. The splits overlap, so their range is descriptive, not a confidence interval or ten independent replications. None of these results changes the original selected approach.
+
+## Limits
+
+- The data covers two Portuguese schools in one period. A random split estimates performance inside that sample, not at other schools or in later years.
+- G1 and G2 are earlier grading-period scores, so predictions come after the second period. This is not an early-warning system.
+- Study time, past failures and travel time come from a questionnaire whose timing is unknown. Treat the context experiments as associations.
+- End-of-course absences and sensitive demographic fields are excluded. Leaving them out does not make the model fair.
+- Moving a slider changes a model input. It says nothing about what would happen to a real student.
+- The nearby-example count is a simple support check and not a statistical uncertainty estimate.
+- Do not use this for admissions, grading, ranking students or deciding who gets help.
+
+## Learn from it and extend it
+
+Start with [LEARNING_GUIDE.md](LEARNING_GUIDE.md), then open [student_performance.ipynb](student_performance.ipynb). The notebook has saved outputs, so you can read it without installing anything.
+
+Experiments worth trying:
+
+1. Add a median baseline and work out why MAE can favor it over a mean baseline.
+2. Define a protocol for testing transfer between the two schools.
+3. Add prediction intervals from a separate calibration split and measure how often they cover the truth.
+4. Explain how the ten published splits change the zero-grade case count and the overall error, without choosing a favorite seed.
+
+If you tune anything against this report's test results, stop calling that test set untouched.
 
 ## Verify
 
-```bash
+```
 pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-Tests cover split isolation, target exclusion, invariance to held-out-label changes, valid predictions, and app interactions. GitHub Actions runs the checks on pushes and pull requests. `requirements-lock.txt` records the exact local environment used for the supplied outputs; the small requirements files allow compatible installations.
+The tests check split isolation, target exclusion, held-out-label invariance for every studio model, known-answer paired bootstrap results, and model-selector/slider interactions. GitHub Actions runs them on every push and pull request. `requirements-lock.txt` records the exact environment behind the supplied outputs, and the smaller requirements files allow compatible versions.
 
-## Files
+## Project layout
 
-```text
-app.py                       Interactive Streamlit app
+```
+app.py                       Streamlit app
 grade_lab.py                 Download, validate, train, evaluate, chart
-student_performance.ipynb    Executed beginner walkthrough
-data/                       Attributed original mathematics CSV
-reports/                    Real metrics, predictions, provenance, chart
-tests/                      Data leakage and app checks
+robustness.py                Paired bootstrap and ten fixed split checks
+student_performance.ipynb    Executed walkthrough for beginners
 LEARNING_GUIDE.md            Concepts, reading order, practice prompts
+data/                        Original mathematics CSV with attribution
+reports/                     Metrics, predictions, uncertainty, provenance
+assets/                      Data-derived banner, social image, app screenshot
+scripts/build_assets.py      Rebuild the banner and social image from results
+tests/                       Leakage checks and app tests
 ```
 
-## Attribution and license
+## How this was built
 
-Dataset: Cortez, P. (2008). *Student Performance*. UCI Machine Learning Repository. https://doi.org/10.24432/C5TG7T. Data licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The original mathematics CSV is redistributed unchanged; aggregates and charts are derived from it. See [data/README.md](data/README.md).
+This project was developed with AI assistance for the implementation, documentation, and tests. The project owner supplied the review and visual direction for this revision. The update adds model comparisons, checks the uncertainty, corrects the banner using actual predictions, and documents what the data cannot establish.
 
-Project code: MIT. AI assistance was used for implementation, documentation, and testing. No performance claims are fabricated.
+## Data and license
+
+Dataset: Cortez, P. (2008). Student Performance. UCI Machine Learning Repository. https://doi.org/10.24432/C5TG7T, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The mathematics CSV is redistributed unchanged, and the aggregates and charts are derived from it. Details are in [data/README.md](data/README.md).
+
+Code is released under the [MIT license](LICENSE).

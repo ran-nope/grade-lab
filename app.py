@@ -1,93 +1,130 @@
-"""Run with: streamlit run app.py"""
+"""Run with: streamlit run app.py. No user data is collected or uploaded."""
+import altair as alt
 import pandas as pd
 import streamlit as st
-from grade_lab import load_data, run_experiments, split_data, predict_grade
+from grade_lab import ROOT, load_data, run_experiments, split_data, predict_grade, fit_studio_models
+from robustness import bootstrap_mae
 
 st.set_page_config(page_title='Grade Lab', page_icon='🧪', layout='wide')
-st.markdown('''<style>
-.stApp {background: #f5f7fb;}
-h1,h2,h3 {color: #182442;}
-div[data-testid="stMetric"] {background:white;padding:20px;border-radius:16px;border:1px solid #e3e8f2;}
-</style>''', unsafe_allow_html=True)
-st.caption('AN OPEN MACHINE LEARNING LAB · UCI MATHEMATICS DATA')
-st.title('Grades are signals. Not destinies.')
-st.write('Explore what a small model can learn—and where its confidence runs out.')
+st.caption('GRADE LAB / A SMALL DATASET, AN HONEST EXPERIMENT')
+st.title('Look beyond the average.')
+st.write('A simple rule won. Four difficult cases show what the average error leaves out.')
 
 
 @st.cache_resource
 def experiment():
     df = load_data()
-    return df, run_experiments(df)
+    return df, run_experiments(df), fit_studio_models(df)
 
 
 try:
-    df, (cv, results, models, predictions) = experiment()
+    df, (cv, results, models, predictions), studio = experiment()
 except Exception as exc:
     st.error(f'Could not load the experiment: {exc}')
-    st.info('Run python grade_lab.py first to download the public data and verify the experiment.')
+    st.info('Run python grade_lab.py first to verify the bundled data and experiment.')
     st.stop()
 
 train, test = split_data(df)
 primary = results[results.experiment == 'Earlier grades'].iloc[0]
 c1, c2, c3 = st.columns(3)
-c1.metric('Students in the dataset', len(df))
-c2.metric('Students held out for testing', len(test))
-c3.metric('Average test error', f'{primary.test_mae:.2f} / 20')
+c1.metric('Held-out students', len(test))
+c2.metric('Baseline average error', f'{primary.test_mae:.2f} / 20')
+c3.metric('Error on five zero-grade cases', f'{abs(test.G3[test.G3.eq(0)] - predictions["Earlier grades"][test.G3.eq(0)]).mean():.2f} / 20')
 predict, evidence, learn = st.tabs(['01 · Prediction studio', '02 · Evidence room', '03 · Learn the project'])
 
 with predict:
+    st.subheader('Watch the models disagree')
+    st.write('All three approaches use the same training rows. The baseline won cross-validation; the alternatives are here to explore, not to pick a new winner from the test set.')
     left, right = st.columns([1, 1.3], gap='large')
     with left:
-        st.subheader('Try an example')
-        st.write('This model uses two earlier grades, after the second grading period.')
+        selected = st.selectbox('Explore an approach', list(studio), index=list(studio).index('Previous-grade baseline'))
+        if selected == 'Previous-grade baseline':
+            st.info('This rule repeats G2. Moving G1 changes the nearby-example count and the other model estimates below, but not the baseline.')
+        elif selected == 'Small decision tree':
+            st.caption('Trees make stepwise predictions. A slider can move within a leaf without changing the estimate.')
+        else:
+            st.caption('Ridge combines G1 and G2. Try holding G2 fixed while moving G1.')
         g1 = st.slider('First-period grade (G1)', 0, 20, 10)
         g2 = st.slider('Second-period grade (G2)', 0, 20, 12)
-        estimate = predict_grade(models['Earlier grades'], g1, g2)
-        st.metric('Estimated final grade', f'{estimate:.1f} / 20')
+        estimates = {name: predict_grade(model, g1, g2) for name, model in studio.items()}
+        estimate = estimates[selected]
+        st.metric('Selected estimate', f'{estimate:.1f} / 20')
         if not 0 <= estimate <= 20:
-            st.warning('This raw model estimate is outside the valid grade range: an example of model limitations.')
+            st.warning('The raw estimate falls outside the grade range. It is not silently clipped.')
         support = ((train.G1 - g1).abs().le(2) & (train.G2 - g2).abs().le(2)).sum()
-        st.caption(f'{support} training examples have both earlier grades within ±2 points. This is a support check, not a confidence score.')
+        st.caption(f'{support} training examples have both grades within ±2 points. This count is a support check, not a confidence score.')
         if support < 10:
-            st.warning('Few nearby examples: treat this scenario with extra caution.')
+            st.warning('Few nearby examples. Treat this scenario cautiously.')
     with right:
-        st.subheader('What if the second grade changed?')
-        scenario = pd.DataFrame({'Second-period grade': range(21), 'Model estimate': [predict_grade(models['Earlier grades'], g1, x) for x in range(21)]})
-        st.line_chart(scenario.set_index('Second-period grade'), color='#4361ee')
-        st.info('This shows how the model responds to different inputs. It does not prove that changing an input causes the outcome to change.')
-        st.caption(f'Selected approach: {primary.selected_model}. The app uses the same training-only fitted model evaluated in the report.')
-        if primary.selected_model == 'Previous-grade baseline':
-            st.caption('The winning rule returns G2 unchanged. G1 affects the nearby-example count, but not this rule’s estimate. The trained models did not beat it in cross-validation.')
-    st.warning('Learning demonstration only. This historical, two-school sample cannot determine a student’s ability, admissions, support eligibility, or future.')
+        vary = st.radio('Vary one input; hold the other fixed', ['G2', 'G1'], horizontal=True)
+        scenario = pd.DataFrame([
+            {'Input grade': value, 'Estimate': predict_grade(model, value if vary == 'G1' else g1, value if vary == 'G2' else g2), 'Approach': name}
+            for name, model in studio.items() for value in range(21)])
+        colors = alt.Scale(domain=list(studio), range=['#6688ff', '#dd9a47', '#25a895'])
+        base_curve = alt.Chart(scenario).encode(
+            x=alt.X('Input grade:Q', title=f'{vary} (other grade held fixed)', scale=alt.Scale(domain=[0, 20])),
+            y=alt.Y('Estimate:Q', title='Predicted final grade'),
+            color=alt.Color('Approach:N', scale=colors),
+            strokeWidth=alt.condition(alt.datum.Approach == selected, alt.value(4), alt.value(1.5)),
+            tooltip=['Approach', 'Input grade', alt.Tooltip('Estimate:Q', format='.2f')])
+        curve = alt.layer(
+            base_curve.transform_filter(alt.datum.Approach != 'Small decision tree').mark_line(),
+            base_curve.transform_filter(alt.datum.Approach == 'Small decision tree').mark_line(interpolate='step-after'),
+        ).properties(height=300)
+        st.altair_chart(curve, width='stretch')
+        st.caption('Changing a model input does not establish what would happen to a real student.')
+    st.dataframe(pd.DataFrame({'Approach': list(estimates), 'Estimate / 20': list(estimates.values())}).round(2), hide_index=True, width='stretch')
+    st.caption('All estimates are raw and use models fitted on the original 316 training records. The dataset is historical; this is a learning demonstration, not a student assessment tool.')
 
 with evidence:
-    st.subheader('The information experiment')
-    st.write('Same students. Same test split. Three sets of inputs. How much do earlier grades change prediction error?')
-    st.bar_chart(results.set_index('experiment')[['test_mae']], horizontal=True, color='#4361ee')
-    st.dataframe(results.round(3), hide_index=True, use_container_width=True)
-    st.caption('Lower MAE is better. Context means study time, past failures, and travel time; its measurement timing is not verified.')
-    with st.expander('How were models selected?'):
-        st.write('Five-fold cross-validation on 316 training records. Mean, ridge regression, and a shallow tree compete; grade-based experiments also include the strong “just use G2” baseline. No test scores determine the winner.')
+    st.subheader('Same split. Different information.')
+    st.write('The selected model for each information set was chosen using training-only cross-validation.')
+    st.dataframe(results.round(3), hide_index=True, width='stretch')
+    with st.expander('See every cross-validation score'):
+        st.write('Five folds on 316 training rows. Scaling is fitted inside each ridge pipeline. The test set does not select the winner.')
         st.dataframe(cv.round(3), hide_index=True)
-    st.subheader('Where does it go wrong?')
+    st.subheader('The cases behind the average')
+    st.caption('Original selected grade-based approach: repeat G2. Marker area represents overlapping records; no points are jittered.')
     audit = pd.DataFrame({'Actual': test.G3, 'Predicted': predictions['Earlier grades']})
-    audit['Absolute error'] = (audit.Actual - audit.Predicted).abs()
-    st.scatter_chart(audit, x='Actual', y='Predicted', color='#139c90')
-    for label, mask in [('Zero final grades', test.G3 == 0), ('Nonzero final grades', test.G3 > 0)]:
-        group = audit.loc[mask]
-        st.write(f'**{label}:** {len(group)} test records · MAE {group["Absolute error"].mean():.2f} points')
-    st.caption('Zeros are retained. The data does not establish why these students received zero. These slices describe errors after evaluation.')
+    audit['Group'] = audit.Actual.eq(0).map({True: 'Zero final grade', False: 'Nonzero final grade'})
+    points = audit.groupby(['Actual', 'Predicted', 'Group'], as_index=False).size().rename(columns={'size': 'Students'})
+    scatter = alt.Chart(points).mark_circle(opacity=.8).encode(
+        x=alt.X('Actual:Q', title='Actual final grade', scale=alt.Scale(domain=[-1, 21])),
+        y=alt.Y('Predicted:Q', title='Predicted final grade', scale=alt.Scale(domain=[-1, 21])),
+        color=alt.Color('Group:N', scale=alt.Scale(domain=['Nonzero final grade', 'Zero final grade'], range=['#6688ff', '#dd9a47'])),
+        size=alt.Size('Students:Q', scale=alt.Scale(range=[65, 320])), tooltip=['Actual', 'Predicted', 'Group', 'Students'])
+    diagonal = alt.Chart(pd.DataFrame({'Actual': [0, 20], 'Predicted': [0, 20]})).mark_line(strokeDash=[6, 5], color='#999999').encode(x='Actual:Q', y='Predicted:Q')
+    st.altair_chart((diagonal + scatter).properties(height=360), width='stretch')
+    zero = audit.Actual.eq(0)
+    a, b = st.columns(2)
+    a.metric('Five zero-grade cases · MAE', f'{abs(audit.loc[zero, "Actual"] - audit.loc[zero, "Predicted"]).mean():.2f}')
+    b.metric('Other 74 cases · MAE', f'{abs(audit.loc[~zero, "Actual"] - audit.loc[~zero, "Predicted"]).mean():.2f}')
+    st.write('One zero-grade case was predicted correctly. Four were missed; two overlap at (0, 9). The data does not establish why those students received zero.')
+    st.subheader('How much does the estimate vary?')
+    intervals, _ = bootstrap_mae(test.G3, predictions)
+    st.dataframe(intervals.rename(columns={'ci_low': '95% lower', 'ci_high': '95% upper'}).round(2), hide_index=True)
+    st.caption('10,000 paired bootstrap resamples of these 79 test rows, seed 2026. Models are held fixed. These are intervals for average error, not individual predictions, and omit retraining, school clustering, and distribution-shift uncertainty.')
+    sensitivity_path = ROOT / 'reports' / 'split_sensitivity.csv'
+    if sensitivity_path.exists():
+        with st.expander('Ten additional splits: all results, no seed shopping'):
+            sensitivity = pd.read_csv(sensitivity_path)
+            summary = sensitivity.groupby('experiment').test_mae.agg(['mean', 'min', 'max'])
+            st.dataframe(summary.round(2))
+            st.caption('Added after the original analysis. Each fixed split repeats training-only selection. Splits overlap: their range is descriptive, not an independent-replication confidence interval. The original winner is unchanged.')
+            st.dataframe(sensitivity.round(3), hide_index=True)
     st.download_button('Download experiment results', results.to_csv(index=False), 'grade-lab-results.csv', 'text/csv')
+    st.download_button('Download bootstrap intervals', intervals.to_csv(index=False), 'grade-lab-bootstrap.csv', 'text/csv')
 
 with learn:
     st.subheader('Understand it in six moves')
     for title, body in [
-        ('1. Ask a precise question', 'Can first- and second-period grades predict a final mathematics grade in this historical sample?'),
-        ('2. Inspect the data', '395 mathematics records. G1, G2, and G3 use a 0–20 scale. Keep zero grades; do not silently clean away hard examples.'),
-        ('3. Hold out unseen examples', 'Use 80% for training and 20% for testing. Fix the random seed so other people can reproduce the split.'),
-        ('4. Beat useful baselines', 'Compare with predicting the average and with simply repeating G2. A complex model has to earn its complexity.'),
-        ('5. Measure honest errors', 'MAE means average absolute error in grade points. Cross-validation chooses models without peeking at test results.'),
-        ('6. Explain the limits', 'Two schools are not the world. Correlation is not causation. A model estimate is not a verdict about a person.')]:
+        ('1. Ask a precise question', 'Can earlier grades predict a final mathematics grade in this historical sample? G2 must already be available.'),
+        ('2. Inspect the data', '395 mathematics records. Grades use a 0–20 scale. Zero grades remain in the analysis.'),
+        ('3. Hold out unseen examples', 'The original 80/20 split reserves 79 records. Seed 42 makes it reproducible.'),
+        ('4. Compare useful baselines', 'The previous-grade rule beat ridge and the shallow tree in training cross-validation. More complexity did not help here.'),
+        ('5. Inspect errors and uncertainty', 'A one-point average miss hides four large zero-grade misses. Bootstrap intervals and additional splits show different sources of variability.'),
+        ('6. State what the data cannot tell you', 'Two historical schools cannot establish performance elsewhere. Context timing is unverified. Scenario curves cannot establish causal effects.')]:
         with st.expander(title):
             st.write(body)
-    st.markdown('Data: [Paulo Cortez, Student Performance, UCI](https://doi.org/10.24432/C5TG7T) · CC BY 4.0. Built with AI assistance as a learning project.')
+    st.info('Do not use this demonstration for admissions, grading, student ranking, or access to support.')
+    st.markdown('Data: [Paulo Cortez, Student Performance, UCI](https://doi.org/10.24432/C5TG7T) · CC BY 4.0. [Source and walkthrough](https://github.com/ran-nope/grade-lab). Built with AI assistance.')

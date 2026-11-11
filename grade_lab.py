@@ -60,9 +60,9 @@ def load_data():
     return df
 
 
-def split_data(df):
+def split_data(df, seed=42):
     # Identical split for every experiment; no subject datasets are combined.
-    return train_test_split(df, test_size=0.2, random_state=42)
+    return train_test_split(df, test_size=0.2, random_state=seed)
 
 
 def candidates(columns):
@@ -76,9 +76,9 @@ def candidates(columns):
     return models
 
 
-def run_experiments(df):
-    train, test = split_data(df)
-    cv = KFold(n_splits=5, shuffle=True, random_state=42)
+def run_experiments(df, seed=42):
+    train, test = split_data(df, seed)
+    cv = KFold(n_splits=5, shuffle=True, random_state=seed)
     comparisons, results, fitted, predictions = [], [], {}, {}
     for experiment, columns in FEATURES.items():
         models = candidates(columns)
@@ -97,6 +97,14 @@ def run_experiments(df):
                         'test_rmse': np.sqrt(mean_squared_error(test.G3, pred)),
                         'test_r2': r2_score(test.G3, pred)})
     return pd.DataFrame(comparisons), pd.DataFrame(results), fitted, predictions
+
+
+def fit_studio_models(df):
+    """Fit fixed alternatives on training rows only; never select on test data."""
+    train, _ = split_data(df)
+    columns = FEATURES['Earlier grades']
+    return {name: model.fit(train[columns], train.G3)
+            for name, model in candidates(columns).items() if name != 'Mean baseline'}
 
 
 def predict_grade(model, g1, g2):
@@ -131,9 +139,12 @@ def save_report():
     means = df.groupby('studytime').G3.agg(['mean', 'count'])
     axes[0, 1].bar(['<2 h', '2–5 h', '5–10 h', '>10 h'], means['mean'], color='#139c90')
     axes[0, 1].set(title='Association is not causation', xlabel='Reported weekly study time', ylabel='Mean final grade')
-    axes[1, 0].scatter(test.G3, predictions['Earlier grades'], alpha=.6, color='#4361ee')
+    zero = test.G3.eq(0)
+    axes[1, 0].scatter(test.G3[~zero], predictions['Earlier grades'][~zero], alpha=.6, color='#4361ee', label='Nonzero final grade')
+    axes[1, 0].scatter(test.G3[zero], predictions['Earlier grades'][zero], s=65, facecolors='none', edgecolors='#c66a24', linewidths=2, label='Zero final grade (n=5)')
     axes[1, 0].plot([0, 20], [0, 20], '--', color='#222')
     axes[1, 0].set(title='Unseen students: prediction vs reality', xlabel='Actual grade', ylabel='Predicted grade')
+    axes[1, 0].legend(fontsize=8)
     axes[1, 1].barh(results.experiment, results.test_mae, color=['#4361ee', '#ef946c', '#139c90'])
     axes[1, 1].set(title='Do earlier grades matter?', xlabel='Test MAE · lower is better')
     fig.suptitle('GRADE LAB  /  Evidence before confidence', fontsize=19, fontweight='bold')
