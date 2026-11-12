@@ -1,9 +1,10 @@
 """Run with: streamlit run app.py. No user data is collected or uploaded."""
+import json
+
 import altair as alt
 import pandas as pd
 import streamlit as st
 from grade_lab import ROOT, load_data, run_experiments, split_data, predict_grade, fit_studio_models
-from robustness import BASELINE_RIDGE_REPLICATES, BOOTSTRAP_SEED, baseline_ridge_intervals
 
 st.set_page_config(page_title='Grade Lab', layout='wide')
 st.caption('GRADE LAB / A SMALL DATASET, AN HONEST EXPERIMENT')
@@ -104,18 +105,22 @@ with evidence:
     st.markdown('**Held-out students with a final grade of zero**')
     st.dataframe(audit.loc[zero, ['G1', 'G2', 'Predicted', 'Actual']], hide_index=True)
     st.subheader('How much does the estimate vary?')
-    intervals = baseline_ridge_intervals(test.G3, predictions)
+    report_dir = ROOT / 'reports'
+    published = pd.read_csv(report_dir / 'bootstrap_intervals.csv')
+    metadata = json.loads((report_dir / 'paired_comparison.json').read_text(encoding='utf-8'))
+    intervals = published.loc[published.experiment.isin(['Earlier grades', 'Study context only'])]
+    intervals = intervals.merge(results[['experiment', 'selected_model']], on='experiment')
     columns = {
         'experiment': 'Inputs', 'selected_model': 'Selected model', 'test_mae': 'Test MAE',
         'ci_low': '95% lower', 'ci_high': '95% upper',
     }
     st.dataframe(intervals[list(columns)].rename(columns=columns).round(2), hide_index=True)
     st.caption(
-        f'95% percentile intervals from {BASELINE_RIDGE_REPLICATES:,} paired resamples '
-        f'of the {len(test)} test records (seed {BOOTSTRAP_SEED}). This measures resampling '
-        'spread in average error with fitted models held fixed. Future performance can differ.'
+        f"Published 95% percentile intervals from {metadata['replicates']:,} paired resamples "
+        f"of the {metadata['test_rows']} test records (seed {metadata['bootstrap_seed']}). "
+        'They describe variation in average error with the fitted models held fixed.'
     )
-    sensitivity_path = ROOT / 'reports' / 'split_sensitivity.csv'
+    sensitivity_path = report_dir / 'split_sensitivity.csv'
     if sensitivity_path.exists():
         with st.expander('Ten additional splits: all results, no seed shopping'):
             sensitivity = pd.read_csv(sensitivity_path)
@@ -124,7 +129,8 @@ with evidence:
             st.caption('Added after the original analysis. Each fixed split repeats training-only selection. Splits overlap: their range is descriptive, not an independent-replication confidence interval. The original winner is unchanged.')
             st.dataframe(sensitivity.round(3), hide_index=True)
     st.download_button('Download experiment results', results.to_csv(index=False), 'grade-lab-results.csv', 'text/csv')
-    st.download_button('Download bootstrap intervals', intervals.to_csv(index=False), 'grade-lab-bootstrap.csv', 'text/csv')
+    st.download_button('Download published bootstrap intervals', (report_dir / 'bootstrap_intervals.csv').read_bytes(),
+                       'bootstrap_intervals.csv', 'text/csv')
 
 with learn:
     st.subheader('Understand it in six moves')
