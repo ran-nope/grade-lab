@@ -52,7 +52,7 @@ The Streamlit app has three tabs and native light/dark themes. [Dark-mode previe
 
 ## Run it
 
-You need Python 3.12.
+Tested on Python 3.12.
 
 ```
 python -m venv .venv
