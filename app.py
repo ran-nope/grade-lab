@@ -5,6 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from grade_lab import ROOT, load_data, run_experiments, split_data, predict_grade, fit_studio_models
+from zero_grades import SCOPE, summarize_zero_grades
 
 st.set_page_config(page_title='Grade Lab', layout='wide')
 st.caption('GRADE LAB / A SMALL DATASET, AN HONEST EXPERIMENT')
@@ -128,6 +129,9 @@ with evidence:
             st.dataframe(summary.round(2))
             st.caption('Added after the original analysis. Each fixed split repeats training-only selection. Splits overlap: their range is descriptive, not an independent-replication confidence interval. The original winner is unchanged.')
             st.dataframe(sensitivity.round(3), hide_index=True)
+    st.subheader('Zero-grade spotlight: development records')
+    st.caption(SCOPE)
+    st.dataframe(summarize_zero_grades(train), hide_index=True)
     st.download_button('Download experiment results', results.to_csv(index=False), 'grade-lab-results.csv', 'text/csv')
     st.download_button('Download published bootstrap intervals', (report_dir / 'bootstrap_intervals.csv').read_bytes(),
                        'bootstrap_intervals.csv', 'text/csv')
