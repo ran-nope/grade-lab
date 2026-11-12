@@ -10,4 +10,5 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
       - run: python grade_lab.py
+      - run: python robustness.py
       - run: python -m pytest -q
