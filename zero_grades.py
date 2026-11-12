@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from grade_lab import ROOT, load_data, split_data
+from grade_lab import ROOT, load_data, run_expanded_benchmarks, split_data
 
 SCOPE = (
     'This describes the development data. The comparison cannot establish causes. '
@@ -44,3 +44,6 @@ def save_zero_grade_report(output=ROOT / 'reports' / 'ZERO_GRADES.md'):
 
 if __name__ == '__main__':
     save_zero_grade_report()
+    # Keep the descriptive report independent of the held-out benchmark.
+    benchmark = run_expanded_benchmarks(load_data())
+    print(benchmark.drop(columns='cv_mae').to_string(index=False))

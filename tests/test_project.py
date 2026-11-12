@@ -1,7 +1,15 @@
+import io
+import zipfile
+
 import numpy as np
+import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import Ridge
+import grade_lab
 from grade_lab import FEATURES, load_data, split_data, run_experiments, predict_grade, fit_studio_models
 from robustness import bootstrap_mae, SENSITIVITY_SEEDS
+from grade_lab import EXPANDED_FEATURES, GradeVelocityTransformer, mixed_feature_pipeline, run_expanded_benchmarks
 
 
 def test_data_and_no_target_leakage():
@@ -94,3 +102,70 @@ def test_sensitivity_split_isolation():
         train, test = split_data(df, seed)
         assert len(train) == 316 and len(test) == 79
         assert set(train.index).isdisjoint(test.index)
+
+
+def test_grade_velocity_preserves_input_and_feature_names():
+    grades = pd.DataFrame({'G1': [8, 12], 'G2': [11, 9]}, index=[6, 2])
+    transformer = GradeVelocityTransformer()
+    result = transformer.fit_transform(grades)
+    assert result.index.tolist() == [6, 2]
+    assert result.grade_delta.tolist() == [3, -3]
+    assert transformer.get_feature_names_out().tolist() == ['G1', 'G2', 'grade_delta']
+    assert list(grades) == ['G1', 'G2']
+
+
+def test_subjects_and_mixed_feature_pipelines():
+    math = load_data()
+    pd.testing.assert_frame_equal(math, load_data('mat'))
+    assert len(math) == 395
+    assert len(load_data('por')) == 649
+    with pytest.raises(ValueError, match='Choose'):
+        load_data('unknown')
+    for columns in EXPANDED_FEATURES.values():
+        train, test = split_data(math)
+        pipeline = mixed_feature_pipeline(columns, Ridge(alpha=10))
+        pipeline.fit(train[columns], train.G3)
+        preprocess = next(step for step in pipeline.named_steps.values() if isinstance(step, ColumnTransformer))
+        names = preprocess.get_feature_names_out().tolist()
+        assert any(name.startswith('categorical__higher_') for name in names)
+        assert ('numeric__grade_delta' in names) == ('G2' in columns)
+        assert preprocess.named_transformers_['numeric'].mean_[0] == pytest.approx(train[columns[0]].mean())
+        changed = test[columns].copy()
+        changed['higher'] = 'unseen-category'
+        with pytest.warns(UserWarning, match='unknown categories'):
+            assert np.isfinite(pipeline.predict(changed)).all()
+
+
+def test_expanded_benchmarks_keep_all_rows_and_score_both_slices():
+    df = load_data()
+    benchmarks = run_expanded_benchmarks(df)
+    hurdle = benchmarks[benchmarks.model.str.startswith('Hurdle')]
+    assert len(hurdle) == 2
+    assert set(hurdle.experiment) == {'Grades + expanded context'}
+    assert benchmarks.zero_grade_rows.tolist() == [5] * len(benchmarks)
+    assert benchmarks.nonzero_grade_rows.tolist() == [74] * len(benchmarks)
+    np.testing.assert_allclose(
+        benchmarks.test_mae,
+        (5 * benchmarks.zero_grade_mae + 74 * benchmarks.nonzero_grade_mae) / 79,
+    )
+
+
+def test_portuguese_download_handles_nested_archive_and_uses_cache(tmp_path, monkeypatch):
+    data = b'G1;G2;G3;studytime;failures;traveltime\n10;11;12;1;0;1\n'
+    inner, outer = io.BytesIO(), io.BytesIO()
+    with zipfile.ZipFile(inner, 'w') as archive:
+        archive.writestr('student-por.csv', data)
+    with zipfile.ZipFile(outer, 'w') as archive:
+        archive.writestr('student.zip', inner.getvalue())
+    monkeypatch.setattr(grade_lab, 'DATA', tmp_path / 'student-mat.csv')
+    requests = []
+
+    def fetch(request, timeout):
+        requests.append(request.full_url)
+        return io.BytesIO(outer.getvalue())
+
+    monkeypatch.setattr(grade_lab.urllib.request, 'urlopen', fetch)
+    assert load_data('por').G3.tolist() == [12]
+    assert load_data('por').G3.tolist() == [12]
+    assert requests == [grade_lab.URL]
+    assert (tmp_path / 'student-por.csv').read_bytes() == data

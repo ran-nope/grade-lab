@@ -1,0 +1,10 @@
+experiment,model,cv_mae,test_mae,zero_grade_mae,nonzero_grade_mae,zero_grade_rows,nonzero_grade_rows
+Expanded context,Mean baseline,3.402865122,3.645850024,10.32594937,3.19449196,5,74
+Expanded context,Ridge regression,3.242086442,3.663695832,9.9042294,3.242038158,5,74
+Expanded context,Small decision tree,3.098919731,3.378703491,7.982505051,3.067635818,5,74
+Grades + expanded context,Mean baseline,3.402865122,3.645850024,10.32594937,3.19449196,5,74
+Grades + expanded context,Ridge regression,1.194202872,1.347581385,6.404155982,1.005920939,5,74
+Grades + expanded context,Small decision tree,1.260292284,1.309990831,3.969230769,1.130312457,5,74
+Grades + expanded context,Previous-grade baseline,0.9529265873,1,6.6,0.6216216216,5,74
+Grades + expanded context,Hurdle (expected),1.348514051,1.678952622,2.92742402,1.594596447,5,74
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.183719711,1.337057518,1.820851345,1.304368746,5,74

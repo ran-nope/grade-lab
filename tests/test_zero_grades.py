@@ -1,10 +1,14 @@
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
+import pytest
+from sklearn.base import clone
+from sklearn.dummy import DummyRegressor
 from streamlit.testing.v1 import AppTest
 
 import zero_grades
-from grade_lab import load_data, split_data
+from grade_lab import HurdleGradeEstimator, load_data, split_data
 
 ROOT = Path(__file__).parents[1]
 
@@ -41,3 +45,28 @@ def test_evidence_displays_the_development_spotlight():
     pd.testing.assert_frame_equal(spotlight, zero_grades.summarize_zero_grades(development))
     assert spotlight.Records.sum() == 316
     assert any(caption.value == zero_grades.SCOPE for caption in evidence.caption)
+
+
+@pytest.mark.parametrize('mode', ['hard', 'expected'])
+def test_hurdle_preserves_hard_zero_and_clips_predictions(mode):
+    df = load_data()
+    development, test = split_data(df)
+    columns = ['G1', 'G2', 'absences', 'failures', 'higher']
+    model = clone(HurdleGradeEstimator(
+        base_regressor=DummyRegressor(strategy='constant', constant=25),
+        mode=mode, threshold=1,
+    )).fit(development[columns], development.G3)
+    prediction = model.predict(test[columns])
+    assert np.all(prediction[test.G2.eq(0)] == 0.0)
+    assert np.all((0 <= prediction) & (prediction <= 20))
+    if mode == 'hard':
+        assert np.all(prediction[test.G2.gt(0)] == 20.0)
+
+
+def test_hurdle_regressor_fits_only_positive_targets_and_handles_one_class():
+    X = pd.DataFrame({'G1': [4, 6, 8], 'G2': [0, 6, 8], 'absences': [1, 0, 3], 'failures': [1, 0, 0]})
+    model = HurdleGradeEstimator(base_regressor=DummyRegressor())
+    np.testing.assert_allclose(model.fit(X, [0, 8, 12]).predict(X), [0, 10, 10])
+    np.testing.assert_allclose(model.fit(X, [0, 0, 0]).predict(X), [0, 0, 0])
+    with pytest.raises(ValueError, match='threshold'):
+        HurdleGradeEstimator(threshold=2).fit(X, [0, 8, 12])
