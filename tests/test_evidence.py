@@ -74,3 +74,20 @@ def test_page_config_uses_plain_title_and_default_icon():
     options = {item.arg: ast.literal_eval(item.value) for item in config.keywords}
     assert options['page_title'] == 'Grade Lab'
     assert 'page_icon' not in options
+
+
+def test_portuguese_cohort_renders_conformal_band_and_coverage():
+    app = AppTest.from_file(str(APP)).run(timeout=60)
+    app.sidebar.selectbox[0].select('Portuguese').run(timeout=60)
+    assert not app.exception
+    assert app.metric[0].value == '130'
+    studio, evidence, _ = app.tabs
+    chart = json.loads(studio.get('vega_lite_chart')[0].proto.spec)
+    band, = [layer for layer in chart['layer'] if layer['mark']['type'] == 'area']
+    assert band['mark']['opacity'] == 0.2
+    assert band['encoding']['y']['field'] == 'Lower'
+    assert band['encoding']['y2']['field'] == 'Upper'
+    coverage, = [item.value for item in evidence.dataframe if 'Empirical test coverage' in item.value]
+    assert coverage.test_rows.tolist() == [130] * 3
+    assert coverage['Empirical test coverage'].between(0, 1).all()
+    assert any('10,000 paired resamples of the 130 test records' in c.value for c in evidence.caption)
