@@ -32,7 +32,7 @@ A good average can hide bad misses. Split the held-out students by whether their
 | Final grade of zero | 5 | 6.60 |
 | Everyone else | 74 | 0.62 |
 
-One of the five zero-grade cases was predicted correctly. Four were missed, including two at the same plotted point, (0, 9). The data does not establish why those grades were zero. All cases stay in the analysis.
+One of the five zero-grade cases was predicted correctly. Four were missed, including two at the same plotted point, (0, 9). The data does not establish why those grades were zero. All cases stay in the analysis. In the development split, all 12 students with a second-period grade of zero finished with zero, and 21 of the 33 students who finished with zero had a nonzero second-period grade ([development split report](reports/ZERO_GRADES.md)).
 
 <div align="center">
 <img src="assets/app-prediction-studio.jpg" alt="Grade Lab Prediction studio with a model selector, grade sliders, and comparison curves" width="100%">
