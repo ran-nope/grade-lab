@@ -96,7 +96,7 @@ flowchart LR
     F --> G["Reports and Streamlit app"]
 ```
 
-Only the 395 mathematics records are used. The Portuguese-language file is left out because some students appear in both. Scaling happens inside each regression pipeline, so validation folds never influence preprocessing. The default baseline is the original selected grade-based approach. Studio alternatives are fitted on the same training rows and are shown for exploration; selecting one does not change the reported experiment winner.
+The published headline results use 395 mathematics records. The app also offers a separate Portuguese cohort with 649 records. The cohorts are never pooled because some students appear in both. Scaling happens inside each regression pipeline, so validation folds never influence preprocessing. The default baseline is the original selected grade-based approach. Studio alternatives are fitted on the same training rows and are shown for exploration; selecting one does not change the reported experiment winner.
 
 <details>
 <summary>Model settings and what the metrics mean</summary>
@@ -117,12 +117,36 @@ The bootstrap uses 10,000 paired resamples with seed 2026. It assumes independen
 
 Each of the ten fixed seeds repeats model selection on that split's development rows. Grade-based MAE ranges from 0.66 to 1.23, and context-only MAE ranges from 2.97 to 3.53. The splits overlap, so the ranges describe variation across related runs. [All split results](reports/split_sensitivity.csv)
 
+### Exploratory benchmarks
+
+The expanded context uses study time, failures, travel time, absences, parental education, and five categorical fields. The grades-plus-context version adds G1, G2, and their difference (G2 minus G1). Each model fits scaling and categorical encoding inside the training fold.
+
+The hurdle model returns zero when G2 is zero. For other rows, a class-weighted logistic model estimates zero-grade risk and ridge estimates the grade using only positive final grades during training. The hard mode uses a fixed 0.50 cutoff. The expected mode weights the positive-grade estimate by one minus the logistic score. Class weighting means the score should not be read as a calibrated probability.
+
+On the original 79 mathematics test records:
+
+| Inputs and model | Overall MAE | Zero-grade MAE (5) | Nonzero-grade MAE (74) |
+|---|---:|---:|---:|
+| Expanded context, ridge | 3.66 | 9.90 | 3.24 |
+| Expanded context, tree | 3.38 | 7.98 | 3.07 |
+| Grades and expanded context, ridge | 1.35 | 6.40 | 1.01 |
+| Grades and expanded context, tree | 1.31 | 3.97 | 1.13 |
+| Repeat G2 | 1.00 | 6.60 | 0.62 |
+| Hurdle, hard | 1.34 | 1.82 | 1.30 |
+| Hurdle, expected | 1.68 | 2.93 | 1.59 |
+
+Both hurdle modes lower the error on the five zero-grade records and raise overall error. The expanded comparisons are retrospective because the timing of the absences field is unverified. The original training-only model selection is unchanged. [Full benchmark](reports/expanded_benchmarks.csv) · [Five-seed benchmark](reports/expanded_seed_sweep.csv)
+
+### Conformal intervals
+
+The shaded band uses a fixed studio model fitted on 75% of the development records. The other 25% supplies absolute residuals for the finite-sample calibration cutoff. The dashed curve shows the fit used for the band, and the solid curves use the full development split. On the mathematics test set, nominal 90% intervals covered 83.5% for the G2 baseline, 87.3% for ridge, and 79.7% for the tree. Coverage applies across comparable records under exchangeability. The app reports the observed fraction separately from the bootstrap interval for MAE. [Coverage report](reports/conformal_coverage.csv)
+
 ## Limits
 
 - The data covers two Portuguese schools in one period. A random split estimates performance inside that sample, not at other schools or in later years.
 - G1 and G2 are earlier grading-period scores, so predictions come after the second period. This is not an early-warning system.
 - Study-context variables come from school reports and questionnaires; their collection timing is not established for this prediction setting. Treat the context experiments as associations.
-- End-of-course absences and sensitive demographic fields are excluded. Leaving them out does not make the model fair.
+- The original experiments exclude absences and demographic fields. The expanded comparisons include absences and parental education.
 - Moving a slider changes a model input. It says nothing about what would happen to a real student.
 - The nearby-example count is a simple support check and not a statistical uncertainty estimate.
 - Do not use this for admissions, grading, ranking students or deciding who gets help.

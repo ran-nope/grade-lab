@@ -1,0 +1,46 @@
+experiment,model,cv_mae,test_mae,zero_grade_mae,nonzero_grade_mae,zero_grade_rows,nonzero_grade_rows,split_seed
+Expanded context,Mean baseline,3.659789177,2.609517705,10.43037975,2.192405063,4,75,1
+Expanded context,Ridge regression,3.543165836,2.588654498,7.481296475,2.327713593,4,75,1
+Expanded context,Small decision tree,3.344894258,2.267057658,4.191154423,2.164439164,4,75,1
+Grades + expanded context,Mean baseline,3.659789177,2.609517705,10.43037975,2.192405063,4,75,1
+Grades + expanded context,Ridge regression,1.242932696,1.074477109,5.643616616,0.8307896687,4,75,1
+Grades + expanded context,Small decision tree,1.320067749,1.201224575,4.3125,1.035289886,4,75,1
+Grades + expanded context,Previous-grade baseline,0.9613095238,0.9620253165,7,0.64,4,75,1
+Grades + expanded context,Hurdle (expected),1.525081543,1.40539853,0.4553545129,1.456067544,4,75,1
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.320143766,1.213247077,0,1.277953588,4,75,1
+Expanded context,Mean baseline,3.533052968,3.184585804,10.41772152,2.481364276,7,72,2
+Expanded context,Ridge regression,3.353293614,2.990318686,7.059018618,2.594750637,7,72,2
+Expanded context,Small decision tree,3.37739961,2.659241753,3.761375661,2.552089845,7,72,2
+Grades + expanded context,Mean baseline,3.533052968,3.184585804,10.41772152,2.481364276,7,72,2
+Grades + expanded context,Ridge regression,1.230353183,1.172185291,4.148659699,0.8828058343,7,72,2
+Grades + expanded context,Small decision tree,1.38355836,1.064067802,1.544642857,1.017345227,7,72,2
+Grades + expanded context,Previous-grade baseline,0.961359127,0.9620253165,5,0.5694444444,7,72,2
+Grades + expanded context,Hurdle (expected),1.496963473,1.603041887,0.2464201163,1.73493567,7,72,2
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.230489075,1.350571926,0,1.48187753,7,72,2
+Expanded context,Mean baseline,3.393820974,3.598742189,10.5221519,2.478778853,11,68,3
+Expanded context,Ridge regression,3.266967581,3.240958172,8.586794311,2.376190561,11,68,3
+Expanded context,Small decision tree,3.248546713,2.854519329,5.185491276,2.477450337,11,68,3
+Grades + expanded context,Mean baseline,3.393820974,3.598742189,10.5221519,2.478778853,11,68,3
+Grades + expanded context,Ridge regression,1.187098948,1.296427796,3.382390428,0.9589926638,11,68,3
+Grades + expanded context,Small decision tree,1.286797354,1.238623363,1.438871473,1.206230286,11,68,3
+Grades + expanded context,Previous-grade baseline,0.965625,0.9493670886,3.181818182,0.5882352941,11,68,3
+Grades + expanded context,Hurdle (expected),1.454873769,1.476506165,0.5377331471,1.628366506,11,68,3
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.337618322,1.193931082,0,1.387066992,11,68,3
+Expanded context,Mean baseline,3.391261215,3.588207018,10.53164557,2.695479204,9,70,4
+Expanded context,Ridge regression,3.292977573,3.172347331,8.215308702,2.523966583,9,70,4
+Expanded context,Small decision tree,3.372859606,2.800010204,4.547612086,2.575318534,9,70,4
+Grades + expanded context,Mean baseline,3.391261215,3.588207018,10.53164557,2.695479204,9,70,4
+Grades + expanded context,Ridge regression,1.247349547,1.010825648,3.262846355,0.721280129,9,70,4
+Grades + expanded context,Small decision tree,1.384663418,0.9857349402,1.245791246,0.9522991294,9,70,4
+Grades + expanded context,Previous-grade baseline,0.9783234127,0.8987341772,3.777777778,0.5285714286,9,70,4
+Grades + expanded context,Hurdle (expected),1.592838699,1.148473048,0.1890542275,1.271826896,9,70,4
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.381299324,0.9610265286,0,1.084587082,9,70,4
+Expanded context,Mean baseline,3.474689441,3.24827752,10.46202532,2.32079566,9,70,5
+Expanded context,Ridge regression,3.234038604,3.202599959,9.923061172,2.33854066,9,70,5
+Expanded context,Small decision tree,3.052719438,3.244887517,8.007836875,2.632508314,9,70,5
+Grades + expanded context,Mean baseline,3.474689441,3.24827752,10.46202532,2.32079566,9,70,5
+Grades + expanded context,Ridge regression,1.123323599,1.365626626,6.108340569,0.7558491195,9,70,5
+Grades + expanded context,Small decision tree,1.16674787,1.491960983,3.647581699,1.214809749,9,70,5
+Grades + expanded context,Previous-grade baseline,0.8857638889,1.265822785,6.666666667,0.5714285714,9,70,5
+Grades + expanded context,Hurdle (expected),1.291253681,1.663060274,2.257205641,1.586670156,9,70,5
+Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.107207235,1.605817895,1.966642395,1.559426174,9,70,5

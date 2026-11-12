@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Benchmark two hurdle modes and two expanded feature sets on the original split and five additional seeds.
+- Show split-conformal bands in the studio and empirical coverage in the Evidence room.
+- Add a separate Portuguese cohort and keep mathematics as the default.
+- Count notebooks as documentation for GitHub language statistics.
+
 ## v1.0.0
 
 - Compare the baseline, ridge, and tree in the Prediction studio by varying either earlier grade and inspecting all estimates.
