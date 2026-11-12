@@ -80,10 +80,10 @@ with predict:
             color=alt.Color('Approach:N', scale=colors),
             strokeWidth=alt.condition(alt.datum.Approach == selected, alt.value(4), alt.value(1.5)),
             tooltip=['Approach', 'Input grade', alt.Tooltip('Estimate:Q', format='.2f')])
-        fitted, q_hat = calibrated[selected]
+        fitted, offsets = calibrated[selected]
         center = fitted.predict(inputs)
-        lower, upper = conformal_bounds(center, q_hat)
-        band_data = pd.DataFrame({'Input grade': inputs.index, 'Center': center, 'Lower': lower, 'Upper': upper})
+        lower, upper = conformal_bounds(center, offsets)
+        band_data = pd.DataFrame({'Input grade': inputs.index, 'Lower': lower, 'Upper': upper})
         interpolation = 'step-after' if selected == 'Small decision tree' else 'linear'
         band_base = alt.Chart(band_data).encode(
             x=alt.X('Input grade:Q', title=f'{vary} (other grade held fixed)', scale=alt.Scale(domain=[0, 20])),
@@ -92,18 +92,14 @@ with predict:
             y=alt.Y('Lower:Q', title='Predicted final grade'), y2='Upper:Q',
             tooltip=['Input grade:Q', alt.Tooltip('Lower:Q', format='.2f'), alt.Tooltip('Upper:Q', format='.2f')],
         )
-        center_line = band_base.mark_line(strokeDash=[5, 4], color='#6688ff', interpolate=interpolation).encode(
-            y=alt.Y('Center:Q', title='Predicted final grade'),
-        )
         curve = alt.layer(
             band,
             base_curve.transform_filter(alt.datum.Approach != 'Small decision tree').mark_line(),
             base_curve.transform_filter(alt.datum.Approach == 'Small decision tree').mark_line(interpolate='step-after'),
-            center_line,
         ).properties(height=300)
         st.altair_chart(curve, width='stretch')
-        st.caption(f'Shading shows the nominal 90% conformal interval for {selected.lower()}. '
-                   'The dashed center uses the fit trained before calibration. The solid curves use all development rows.')
+        st.caption(f'Shading shows the nominal 90% band for {selected.lower()}. '
+                   'The offsets come from signed errors on five development folds.')
         st.caption('Changing a model input does not establish what would happen to a real student.')
     st.dataframe(pd.DataFrame({'Approach': list(estimates), 'Estimate / 20': list(estimates.values())}).round(2), hide_index=True, width='stretch')
     st.caption(f'The estimate table uses models fitted on all {len(train)} development records.')
@@ -159,12 +155,13 @@ with evidence:
     )
     st.subheader('Conformal coverage on held-out records')
     st.dataframe(coverage.rename(columns={'test_coverage': 'Empirical test coverage'}).round(3), hide_index=True)
-    st.caption('The fixed studio models use earlier grades. Each fit sets aside 25% of development records for calibration. '
-               'Coverage is the fraction of held-out grades within the nominal 90% intervals.')
+    st.caption('The fixed studio models use earlier grades. Coverage is the fraction of held-out grades '
+               'within the nominal 90% bands. The mean width is measured in grade points.')
     st.subheader('Exploratory expanded-context benchmarks')
     st.dataframe(expanded.round(3), hide_index=True, width='stretch')
-    st.caption('These comparisons use historical records. The timing of the absences field is unverified. '
-               'The models and hurdle threshold were fixed before evaluation.')
+    st.caption('The prospective feature set excludes absences. The retrospective set includes absences, '
+               'whose timing relative to prediction is unverified. The hard hurdle cutoff is selected '
+               'on out-of-fold development predictions.')
     sensitivity_path = report_dir / 'split_sensitivity.csv'
     if subject == 'mat' and sensitivity_path.exists():
         with st.expander('Ten additional splits: all results, no seed shopping'):

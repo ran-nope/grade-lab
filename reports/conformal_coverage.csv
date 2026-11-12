@@ -1,4 +1,7 @@
-model,nominal_coverage,test_coverage,test_rows,q_hat
-Ridge regression,0.9,0.8734177215,79,1.945485459
-Small decision tree,0.9,0.7974683544,79,1.933333333
-Previous-grade baseline,0.9,0.835443038,79,1
+model,nominal_coverage,test_coverage,test_rows,q_low,q_high,mean_width,subject
+Ridge regression,0.9,0.835443038,79,-4.301084379,1.924648872,6.08165393,mat
+Small decision tree,0.9,0.8227848101,79,-2.392857143,2.85,5.156610408,mat
+Previous-grade baseline,0.9,0.8607594937,79,-5,1,5.936708861,mat
+Ridge regression,0.9,0.9153846154,130,-1.377128764,1.646107836,3.000574635,por
+Small decision tree,0.9,0.9307692308,130,-1.990196078,2.05,4.040196078,por
+Previous-grade baseline,0.9,0.9846153846,130,-1,2,2.992307692,por

@@ -3,7 +3,9 @@
 ## Unreleased
 
 - Benchmark two hurdle modes and two expanded feature sets on the original split and five additional seeds.
-- Show split-conformal bands in the studio and empirical coverage in the Evidence room.
+- Learn the hard hurdle cutoff from development folds and guard expected-mode shrinkage at low zero-risk scores.
+- Separate expanded inputs that exclude absences from the retrospective inputs that include them.
+- Use asymmetric bands from signed development-fold residuals and report test coverage and mean width.
 - Add a separate Portuguese cohort and keep mathematics as the default.
 - Count notebooks as documentation for GitHub language statistics.
 
