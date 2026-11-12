@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-4361ee.svg)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-182442.svg)
-![Streamlit app](https://img.shields.io/badge/app-Streamlit-139c90.svg)
+[![Live demo](https://img.shields.io/badge/demo-open%20Grade%20Lab-139c90.svg)](https://grade-lab-ran-nope.streamlit.app/)
 [![Checks](https://github.com/ran-nope/grade-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/ran-nope/grade-lab/actions/workflows/tests.yml)
 
 
@@ -124,7 +124,7 @@ The extra checks were added after reviewing the first result. The splits overlap
 
 - The data covers two Portuguese schools in one period. A random split estimates performance inside that sample, not at other schools or in later years.
 - G1 and G2 are earlier grading-period scores, so predictions come after the second period. This is not an early-warning system.
-- Study time, past failures and travel time come from a questionnaire whose timing is unknown. Treat the context experiments as associations.
+- Study-context variables come from school reports and questionnaires; their collection timing is not established for this prediction setting. Treat the context experiments as associations.
 - End-of-course absences and sensitive demographic fields are excluded. Leaving them out does not make the model fair.
 - Moving a slider changes a model input. It says nothing about what would happen to a real student.
 - The nearby-example count is a simple support check and not a statistical uncertainty estimate.

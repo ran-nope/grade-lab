@@ -92,7 +92,7 @@ with evidence:
         x=alt.X('Actual:Q', title='Actual final grade', scale=alt.Scale(domain=[-1, 21])),
         y=alt.Y('Predicted:Q', title='Predicted final grade', scale=alt.Scale(domain=[-1, 21])),
         color=alt.Color('Group:N', scale=alt.Scale(domain=['Nonzero final grade', 'Zero final grade'], range=['#6688ff', '#dd9a47'])),
-        size=alt.Size('Students:Q', scale=alt.Scale(range=[65, 320])), tooltip=['Actual', 'Predicted', 'Group', 'Students'])
+        size=alt.Size('Students:Q', scale=alt.Scale(domain=[1, 7], range=[45, 315], zero=False), legend=alt.Legend(values=[1, 2, 4, 7])), tooltip=['Actual', 'Predicted', 'Group', 'Students'])
     diagonal = alt.Chart(pd.DataFrame({'Actual': [0, 20], 'Predicted': [0, 20]})).mark_line(strokeDash=[6, 5], color='#999999').encode(x='Actual:Q', y='Predicted:Q')
     st.altair_chart((diagonal + scatter).properties(height=360), width='stretch')
     zero = audit.Actual.eq(0)
