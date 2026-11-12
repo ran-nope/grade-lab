@@ -23,7 +23,7 @@ Test MAE is the average miss in grade points on a 0–20 scale, measured on 79 s
 | Repeat the second-period grade (G2) | 1.00 | 0.63–1.43 |
 | Ridge on study time, past failures and travel time | 3.50 | 2.93–4.09 |
 
-These compare different input sets. The intervals resample test rows with the fitted models held fixed; they are not uncertainty ranges for an individual student.
+These approaches use different inputs. The intervals describe average error across resamples of the test rows, with the fitted models held fixed. They cannot give a range for an individual student's grade.
 
 A good average can hide bad misses. Split the held-out students by whether their final grade was zero:
 
@@ -46,7 +46,7 @@ The Streamlit app has three tabs and native light/dark themes. [Dark-mode previe
 
 | Tab | What you do there |
 |---|---|
-| 01 Prediction studio | Choose baseline, ridge, or tree; compare all estimates; vary G1 or G2 in the scenario curves. The baseline clearly explains why G1 does not change its estimate. Nearby-example counts indicate data support, not confidence. |
+| 01 Prediction studio | Choose the baseline, ridge, or tree. Compare all estimates and vary G1 or G2 in the scenario curves. When the baseline is selected, the app explains why G1 does not change its estimate. The nearby-example count shows how many development records have similar grades. |
 | 02 Evidence room | Inspect three feature experiments, the equality line and highlighted zero-grade cases, bootstrap intervals, and all ten additional splits. |
 | 03 Learn the project | Six short steps that walk through the whole method, from the question to the limits. |
 
@@ -105,7 +105,7 @@ Only the 395 mathematics records are used. The Portuguese-language file is left 
 
 Ridge uses alpha=10. The decision tree uses depth 3 and at least 15 samples per leaf. These are fixed, modest choices and were not tuned against the test set. Predictions are shown raw, without clipping to 0–20.
 
-MAE is measured in grade points. It is not an accuracy percentage and it is not an uncertainty interval for any one student. The cross-validation standard deviation describes variation between folds and is not a confidence interval.
+MAE is measured in grade points. The cross-validation standard deviation describes variation between folds.
 
 </details>
 
@@ -113,12 +113,9 @@ Full numbers: [original results](reports/RESULTS.md), [training CV scores](repor
 
 ## How stable is the result?
 
-The original split stays unchanged. Two supplementary checks make its limits clearer:
+The bootstrap uses 10,000 paired resamples with seed 2026. It assumes independent test rows from the same distribution and omits retraining, model selection, school clustering, and distribution shifts. The report gives the paired interval for the difference between context-only and earlier-grades MAE. [Bootstrap report](reports/ROBUSTNESS.md)
 
-- **Test-row uncertainty:** 10,000 paired bootstrap resamples, seed 2026. The context-minus-grades MAE gap is reported with its paired interval in [ROBUSTNESS.md](reports/ROBUSTNESS.md). This assumes IID rows and omits retraining, selection, school clustering, and distribution shifts.
-- **Split sensitivity:** ten fixed seeds, each rerunning training-only model selection. Grade-based MAE ranges from **0.66 to 1.23**; context-only MAE ranges from **2.97 to 3.53**. Every run is published in [split_sensitivity.csv](reports/split_sensitivity.csv).
-
-The extra checks were added after reviewing the first result. The splits overlap, so their range is descriptive, not a confidence interval or ten independent replications. None of these results changes the original selected approach.
+Each of the ten fixed seeds repeats model selection on that split's development rows. Grade-based MAE ranges from 0.66 to 1.23, and context-only MAE ranges from 2.97 to 3.53. The splits overlap, so the ranges describe variation across related runs. [All split results](reports/split_sensitivity.csv)
 
 ## Limits
 
@@ -169,7 +166,7 @@ tests/                       Leakage checks and app tests
 
 ## How this was built
 
-This project was developed with AI assistance for the implementation, documentation, and tests. The project owner supplied the review and visual direction for this revision. The update adds model comparisons, checks the uncertainty, corrects the banner using actual predictions, and documents what the data cannot establish.
+<!-- What did you review or question? What is one thing you got wrong or changed your mind about? What is one thing you now understand better? -->
 
 ## Data and license
 
