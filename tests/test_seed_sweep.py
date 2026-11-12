@@ -29,7 +29,8 @@ def test_expanded_sweep_exports_both_hurdle_modes_for_every_seed(tmp_path):
     output = tmp_path / 'expanded.csv'
     seed_sweep.save_expanded_seed_sweep(output)
     results = pd.read_csv(output)
-    assert results.groupby('split_seed', sort=False).size().to_dict() == dict.fromkeys(range(1, 6), 9)
+    assert results.groupby('split_seed', sort=False).size().to_dict() == dict.fromkeys(range(1, 6), 12)
     hurdle = results[results.model.str.startswith('Hurdle')]
     assert hurdle.groupby('split_seed').model.nunique().tolist() == [2] * 5
+    assert hurdle.dropna(subset='threshold').threshold.between(0.35, 0.95).all()
     assert hurdle[['test_mae', 'zero_grade_mae', 'nonzero_grade_mae']].notna().all().all()

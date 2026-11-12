@@ -5,10 +5,11 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.dummy import DummyRegressor
+from sklearn.model_selection import StratifiedKFold
 from streamlit.testing.v1 import AppTest
 
 import zero_grades
-from grade_lab import HurdleGradeEstimator, load_data, split_data
+from grade_lab import EXPANDED_FEATURES, PROSPECTIVE_CONTEXT, HurdleGradeEstimator, load_data, split_data
 
 ROOT = Path(__file__).parents[1]
 
@@ -70,3 +71,38 @@ def test_hurdle_regressor_fits_only_positive_targets_and_handles_one_class():
     np.testing.assert_allclose(model.fit(X, [0, 0, 0]).predict(X), [0, 0, 0])
     with pytest.raises(ValueError, match='threshold'):
         HurdleGradeEstimator(threshold=2).fit(X, [0, 8, 12])
+
+
+def test_auto_threshold_minimizes_development_out_of_fold_mae():
+    development, _ = split_data(load_data())
+    columns = EXPANDED_FEATURES[PROSPECTIVE_CONTEXT]
+    X, y = development[columns].reset_index(drop=True), development.G3.to_numpy()
+    active = np.flatnonzero(X.G2.gt(0))
+    probabilities, grades = np.zeros(len(X)), np.zeros(len(X))
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    for _, validation in cv.split(active, y[active] == 0):
+        validation_rows = active[validation]
+        training_rows = np.setdiff1d(np.arange(len(X)), validation_rows)
+        fixed = HurdleGradeEstimator(mode='hard', threshold=0.5).fit(X.iloc[training_rows], y[training_rows])
+        probabilities[validation_rows] = fixed.classifier_.predict_proba(X.iloc[validation_rows])[:, 1]
+        grades[validation_rows] = fixed.regressor_.predict(X.iloc[validation_rows])
+
+    def loss(threshold):
+        prediction = np.where(probabilities >= threshold, 0, np.clip(grades, 0, 20))
+        errors = np.abs(y - prediction)
+        return errors[active].mean(), errors[active][y[active] == 0].mean()
+
+    expected = min(np.linspace(0.35, 0.95, 61), key=loss)
+    model = HurdleGradeEstimator(mode='hard').fit(X, y)
+    assert 0.35 <= model.threshold_ <= 0.95
+    assert model.threshold_ == expected
+
+
+def test_expected_mode_uses_noise_floor():
+    X = pd.DataFrame({'G1': [8, 10, 14, 12], 'G2': [8, 10, 14, 0], 'failures': [1, 0, 0, 0]})
+    y = [0, 10, 14, 0]
+    guarded = HurdleGradeEstimator(base_regressor=DummyRegressor(), noise_floor=1).fit(X, y)
+    blended = HurdleGradeEstimator(base_regressor=DummyRegressor(), noise_floor=0).fit(X, y)
+    np.testing.assert_array_equal(guarded.predict(X), [12, 12, 12, 0])
+    assert (blended.predict(X)[:3] < 12).all()
+    assert blended.predict(X)[3] == 0

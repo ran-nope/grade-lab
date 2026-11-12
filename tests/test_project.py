@@ -136,17 +136,20 @@ def test_subjects_and_mixed_feature_pipelines():
             assert np.isfinite(pipeline.predict(changed)).all()
 
 
-def test_expanded_benchmarks_keep_all_rows_and_score_both_slices():
-    df = load_data()
+@pytest.mark.parametrize('subject,n_zero,n_positive', [('mat', 5, 74), ('por', 2, 128)])
+def test_expanded_benchmarks_keep_all_rows_and_score_both_slices(subject, n_zero, n_positive):
+    df = load_data(subject)
     benchmarks = run_expanded_benchmarks(df)
     hurdle = benchmarks[benchmarks.model.str.startswith('Hurdle')]
-    assert len(hurdle) == 2
-    assert set(hurdle.experiment) == {'Grades + expanded context'}
-    assert benchmarks.zero_grade_rows.tolist() == [5] * len(benchmarks)
-    assert benchmarks.nonzero_grade_rows.tolist() == [74] * len(benchmarks)
+    assert len(hurdle) == 4
+    assert set(hurdle.experiment) == set(EXPANDED_FEATURES)
+    assert 'absences' not in EXPANDED_FEATURES[grade_lab.PROSPECTIVE_CONTEXT]
+    assert 'absences' in EXPANDED_FEATURES[grade_lab.RETROSPECTIVE_CONTEXT]
+    assert benchmarks.zero_grade_rows.tolist() == [n_zero] * len(benchmarks)
+    assert benchmarks.nonzero_grade_rows.tolist() == [n_positive] * len(benchmarks)
     np.testing.assert_allclose(
         benchmarks.test_mae,
-        (5 * benchmarks.zero_grade_mae + 74 * benchmarks.nonzero_grade_mae) / 79,
+        (n_zero * benchmarks.zero_grade_mae + n_positive * benchmarks.nonzero_grade_mae) / (n_zero + n_positive),
     )
 
 

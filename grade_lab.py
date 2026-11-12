@@ -14,7 +14,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import KFold, cross_val_score, train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeRegressor
@@ -28,11 +28,14 @@ FEATURES = {
     'Study context only': ['studytime', 'failures', 'traveltime'],
     'Grades + context': ['G1', 'G2', 'studytime', 'failures', 'traveltime'],
 }
-EXPANDED_NUMERIC = ['studytime', 'failures', 'traveltime', 'absences', 'Medu', 'Fedu']
+EXPANDED_NUMERIC = ['studytime', 'failures', 'traveltime', 'Medu', 'Fedu']
 EXPANDED_CATEGORICAL = ['higher', 'schoolsup', 'famsup', 'internet', 'paid']
+PROSPECTIVE_CONTEXT = 'Prospective expanded context (excludes absences)'
+RETROSPECTIVE_CONTEXT = 'Retrospective expanded context (includes absences)'
 EXPANDED_FEATURES = {
-    'Expanded context': EXPANDED_NUMERIC + EXPANDED_CATEGORICAL,
-    'Grades + expanded context': ['G1', 'G2'] + EXPANDED_NUMERIC + EXPANDED_CATEGORICAL,
+    PROSPECTIVE_CONTEXT: ['G1', 'G2'] + EXPANDED_NUMERIC + EXPANDED_CATEGORICAL,
+    RETROSPECTIVE_CONTEXT: ['G1', 'G2'] + EXPANDED_NUMERIC[:3] + ['absences']
+    + EXPANDED_NUMERIC[3:] + EXPANDED_CATEGORICAL,
 }
 
 
@@ -86,18 +89,22 @@ def mixed_feature_pipeline(columns, estimator):
 class HurdleGradeEstimator(RegressorMixin, BaseEstimator):
     """Estimate zero risk and the grade conditional on a positive outcome."""
 
-    def __init__(self, base_regressor=None, mode='expected', threshold=0.5):
+    def __init__(self, base_regressor=None, mode='expected', threshold='auto', noise_floor=0.15):
         self.base_regressor = base_regressor
         self.mode = mode
         self.threshold = threshold
+        self.noise_floor = noise_floor
 
     def fit(self, X, y):
-        if self.mode not in ('hard', 'expected') or not 0 <= self.threshold <= 1:
-            raise ValueError('Use hard or expected mode and a threshold between 0 and 1.')
-        required = {'G1', 'G2', 'absences', 'failures'}
+        if self.mode not in ('hard', 'expected'):
+            raise ValueError('Use hard or expected mode.')
+        for name, value in [('threshold', self.threshold), ('noise_floor', self.noise_floor)]:
+            if value != 'auto' and (not isinstance(value, (int, float)) or not 0 <= value <= 1):
+                raise ValueError(f'Use auto or a {name} between 0 and 1.')
+        required = {'G1', 'G2', 'failures'}
         if not required.issubset(X.columns):
             raise ValueError(f'Missing hurdle inputs: {sorted(required - set(X.columns))}')
-        columns = [name for name in EXPANDED_FEATURES['Grades + expanded context'] if name in X]
+        columns = [name for name in EXPANDED_FEATURES[RETROSPECTIVE_CONTEXT] if name in X]
         X = X[columns]
         y = np.asarray(y, dtype=float)
         if y.shape != (len(X),) or not len(y) or not np.all((0 <= y) & (y <= 20)):
@@ -105,6 +112,12 @@ class HurdleGradeEstimator(RegressorMixin, BaseEstimator):
         self.feature_names_in_ = np.asarray(X.columns, dtype=object)
         self.n_features_in_ = X.shape[1]
         active = X.G2.gt(0).to_numpy()
+        self.threshold_ = 0.5 if self.threshold == 'auto' else float(self.threshold)
+        self.noise_floor_ = 0.15 if self.noise_floor == 'auto' else float(self.noise_floor)
+        if self.mode == 'hard' and self.threshold == 'auto':
+            self.threshold_ = self._choose_cutoff(X, y, active, np.linspace(0.35, 0.95, 61), self.threshold_)
+        if self.mode == 'expected' and self.noise_floor == 'auto':
+            self.noise_floor_ = self._choose_cutoff(X, y, active, np.linspace(0.05, 0.35, 31), self.noise_floor_)
         labels = y[active] == 0
         self.classifier_ = None
         self.zero_probability_ = float(labels.mean()) if labels.size else 1.0
@@ -120,21 +133,52 @@ class HurdleGradeEstimator(RegressorMixin, BaseEstimator):
             self.regressor_ = regressor.fit(X.iloc[positive], y[positive])
         return self
 
+    def _choose_cutoff(self, X, y, active, cutoffs, fallback):
+        positions = np.flatnonzero(active)
+        labels = y[positions] == 0
+        n_splits = min(5, int(labels.sum()), int((~labels).sum()))
+        if n_splits < 2:
+            return fallback
+        fold_splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+        probabilities, grades = np.empty(len(positions)), np.empty(len(positions))
+        for train_fold, val_fold in fold_splitter.split(positions, labels):
+            train_rows = np.r_[np.flatnonzero(~active), positions[train_fold]]
+            fold_model = clone(self).set_params(threshold=0.5, noise_floor=0.15)
+            fold_model.fit(X.iloc[train_rows], y[train_rows])
+            probabilities[val_fold], grades[val_fold] = fold_model._predict_stages(X.iloc[positions[val_fold]])
+        actual = y[positions]
+
+        def loss(cutoff):
+            prediction = self._combine(probabilities, grades, cutoff)
+            errors = np.abs(actual - prediction)
+            return errors.mean(), errors[labels].mean()
+
+        # The hard-zero rows contribute the same error at every candidate cutoff.
+        return float(min(cutoffs, key=loss))
+
+    def _predict_stages(self, X):
+        rows = X[self.feature_names_in_]
+        probability = (self.classifier_.predict_proba(rows)[:, 1] if self.classifier_ is not None
+                       else np.full(len(rows), self.zero_probability_))
+        grade = self.regressor_.predict(rows) if self.regressor_ is not None else np.zeros(len(rows))
+        return probability, grade
+
+    def _combine(self, probability, grade, cutoff):
+        if self.mode == 'hard':
+            prediction = np.where(probability >= cutoff, 0.0, grade)
+        else:
+            prediction = np.where(probability > cutoff, (1 - probability) * grade, grade)
+        return np.clip(prediction, 0.0, 20.0)
+
     def predict(self, X):
         check_is_fitted(self, 'regressor_')
         active = X.G2.gt(0).to_numpy()
         estimates = np.zeros(len(X))
-        if not active.any() or self.regressor_ is None:
-            return estimates
-        rows = X.iloc[active][self.feature_names_in_]
-        probability = (self.classifier_.predict_proba(rows)[:, 1] if self.classifier_ is not None
-                       else self.zero_probability_)
-        positive_grade = self.regressor_.predict(rows)
-        if self.mode == 'hard':
-            estimates[active] = np.where(probability >= self.threshold, 0.0, positive_grade)
-        else:
-            estimates[active] = (1 - probability) * positive_grade
-        return np.clip(estimates, 0.0, 20.0)
+        if active.any():
+            probability, grade = self._predict_stages(X.iloc[active])
+            cutoff = self.threshold_ if self.mode == 'hard' else self.noise_floor_
+            estimates[active] = self._combine(probability, grade, cutoff)
+        return estimates
 
 
 def download_data(subject: Literal['mat', 'por'] = 'mat'):
@@ -235,15 +279,20 @@ def run_expanded_benchmarks(df, seed=42):
             models.update({
                 'Previous-grade baseline': PreviousGrade(),
                 'Hurdle (expected)': HurdleGradeEstimator(),
-                'Hurdle (hard, threshold 0.5)': HurdleGradeEstimator(mode='hard'),
+                'Hurdle (hard, tuned threshold)': HurdleGradeEstimator(mode='hard'),
             })
         for name, model in models.items():
             # DummyRegressor ignores the input values, so no encoding is needed.
             scores = -cross_val_score(
                 model, train[columns], train.G3, cv=cv, scoring='neg_mean_absolute_error',
             )
-            prediction = model.fit(train[columns], train.G3).predict(test[columns])
+            fitted = model.fit(train[columns], train.G3)
+            prediction = fitted.predict(test[columns])
             rows.append({'experiment': experiment, 'model': name, 'cv_mae': scores.mean(),
+                         'threshold': fitted.threshold_ if isinstance(fitted, HurdleGradeEstimator)
+                         and fitted.mode == 'hard' else np.nan,
+                         'noise_floor': fitted.noise_floor_ if isinstance(fitted, HurdleGradeEstimator)
+                         and fitted.mode == 'expected' else np.nan,
                          **grade_slice_scores(test.G3, prediction)})
     return pd.DataFrame(rows)
 
@@ -311,7 +360,11 @@ def save_report():
     (out / 'RESULTS.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print(results.to_string(index=False))
     expanded = run_expanded_benchmarks(df)
-    expanded.to_csv(out / 'expanded_benchmarks.csv', index=False, float_format='%.10g')
+    by_subject = pd.concat([
+        expanded.assign(subject='mat'),
+        run_expanded_benchmarks(load_data('por')).assign(subject='por'),
+    ], ignore_index=True)
+    by_subject.to_csv(out / 'expanded_benchmarks.csv', index=False, float_format='%.10g')
     print(expanded.to_string(index=False))
 
 

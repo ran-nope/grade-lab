@@ -1,10 +1,25 @@
-experiment,model,cv_mae,test_mae,zero_grade_mae,nonzero_grade_mae,zero_grade_rows,nonzero_grade_rows
-Expanded context,Mean baseline,3.402865122,3.645850024,10.32594937,3.19449196,5,74
-Expanded context,Ridge regression,3.242086442,3.663695832,9.9042294,3.242038158,5,74
-Expanded context,Small decision tree,3.098919731,3.378703491,7.982505051,3.067635818,5,74
-Grades + expanded context,Mean baseline,3.402865122,3.645850024,10.32594937,3.19449196,5,74
-Grades + expanded context,Ridge regression,1.194202872,1.347581385,6.404155982,1.005920939,5,74
-Grades + expanded context,Small decision tree,1.260292284,1.309990831,3.969230769,1.130312457,5,74
-Grades + expanded context,Previous-grade baseline,0.9529265873,1,6.6,0.6216216216,5,74
-Grades + expanded context,Hurdle (expected),1.348514051,1.678952622,2.92742402,1.594596447,5,74
-Grades + expanded context,"Hurdle (hard, threshold 0.5)",1.183719711,1.337057518,1.820851345,1.304368746,5,74
+experiment,model,cv_mae,threshold,noise_floor,test_mae,zero_grade_mae,nonzero_grade_mae,zero_grade_rows,nonzero_grade_rows,subject
+Prospective expanded context (excludes absences),Mean baseline,3.402865122,,,3.645850024,10.32594937,3.19449196,5,74,mat
+Prospective expanded context (excludes absences),Ridge regression,1.171654543,,,1.307385725,6.507951838,0.9559961233,5,74,mat
+Prospective expanded context (excludes absences),Small decision tree,1.412003699,,,1.425202957,6.460483688,1.084981286,5,74,mat
+Prospective expanded context (excludes absences),Previous-grade baseline,0.9529265873,,,1,6.6,0.6216216216,5,74,mat
+Prospective expanded context (excludes absences),Hurdle (expected),1.893992161,,0.15,2.323278611,3.868503189,2.218871545,5,74,mat
+Prospective expanded context (excludes absences),"Hurdle (hard, tuned threshold)",1.081266359,0.94,,1.262747601,6.773755974,0.8903821701,5,74,mat
+Retrospective expanded context (includes absences),Mean baseline,3.402865122,,,3.645850024,10.32594937,3.19449196,5,74,mat
+Retrospective expanded context (includes absences),Ridge regression,1.194202872,,,1.347581385,6.404155982,1.005920939,5,74,mat
+Retrospective expanded context (includes absences),Small decision tree,1.260292284,,,1.309990831,3.969230769,1.130312457,5,74,mat
+Retrospective expanded context (includes absences),Previous-grade baseline,0.9529265873,,,1,6.6,0.6216216216,5,74,mat
+Retrospective expanded context (includes absences),Hurdle (expected),1.304123243,,0.15,1.644731705,2.92742402,1.558063305,5,74,mat
+Retrospective expanded context (includes absences),"Hurdle (hard, tuned threshold)",0.9161144417,0.91,,1.230262701,5.363621246,0.9509817184,5,74,mat
+Prospective expanded context (excludes absences),Mean baseline,2.427811046,,,2.39460501,11.7938343,2.247742052,2,128,por
+Prospective expanded context (excludes absences),Ridge regression,0.8205568361,,,0.7392308809,4.935328128,0.6736668614,2,128,por
+Prospective expanded context (excludes absences),Small decision tree,0.9155239486,,,0.8206690077,7.304945055,0.7193521945,2,128,por
+Prospective expanded context (excludes absences),Previous-grade baseline,0.7899365198,,,0.6769230769,4.5,0.6171875,2,128,por
+Prospective expanded context (excludes absences),Hurdle (expected),1.043419876,,0.15,0.9501852802,4.710419632,0.8914316185,2,128,por
+Prospective expanded context (excludes absences),"Hurdle (hard, tuned threshold)",0.8321023276,0.95,,0.7410752717,4.710419632,0.6790542661,2,128,por
+Retrospective expanded context (includes absences),Mean baseline,2.427811046,,,2.39460501,11.7938343,2.247742052,2,128,por
+Retrospective expanded context (includes absences),Ridge regression,0.825456053,,,0.7428730969,4.810095692,0.6793227438,2,128,por
+Retrospective expanded context (includes absences),Small decision tree,0.9082019708,,,0.7515028798,6.935897436,0.6548717148,2,128,por
+Retrospective expanded context (includes absences),Previous-grade baseline,0.7899365198,,,0.6769230769,4.5,0.6171875,2,128,por
+Retrospective expanded context (includes absences),Hurdle (expected),0.9820696249,,0.15,0.8742723429,4.721860896,0.8141537718,2,128,por
+Retrospective expanded context (includes absences),"Hurdle (hard, tuned threshold)",0.8269922188,0.89,,0.7411603447,4.721860896,0.6789618986,2,128,por
