@@ -1,0 +1,3 @@
+experiment,selected_model,test_mae,ci_low,ci_high,test_rows,resamples,bootstrap_seed
+Earlier grades,Previous-grade baseline,1.0,0.620253164556962,1.418037974683544,79,1000,2026
+Study context only,Ridge regression,3.4987234667438556,2.9649819990246837,4.137639551597061,79,1000,2026
