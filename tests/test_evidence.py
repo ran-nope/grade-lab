@@ -51,9 +51,18 @@ def test_all_tabs_render_and_evidence_labels_bootstrap_spread():
     intervals, = [item.value for item in evidence.dataframe
                   if '95% lower' in item.value.columns]
     assert intervals['Selected model'].tolist() == ['Previous-grade baseline', 'Ridge regression']
-    assert intervals['Test MAE'].tolist() == [1.0, 3.5]
-    assert any('1,000 paired resamples of the 79 test records' in text.value
-               and 'Future performance can differ' in text.value for text in evidence.caption)
+    report_dir = APP.parent / 'reports'
+    published = pd.read_csv(report_dir / 'bootstrap_intervals.csv').set_index('experiment')
+    expected = published.loc[intervals.Inputs, ['test_mae', 'ci_low', 'ci_high']]
+    expected.columns = ['Test MAE', '95% lower', '95% upper']
+    pd.testing.assert_frame_equal(
+        intervals[list(expected.columns)].reset_index(drop=True),
+        expected.round(2).reset_index(drop=True),
+    )
+    metadata = json.loads((report_dir / 'paired_comparison.json').read_text(encoding='utf-8'))
+    label = (f"{metadata['replicates']:,} paired resamples of the {metadata['test_rows']} "
+             f"test records (seed {metadata['bootstrap_seed']})")
+    assert any(label in text.value for text in evidence.caption)
 
 
 def test_page_config_uses_plain_title_and_default_icon():
