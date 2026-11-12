@@ -10,6 +10,7 @@ from grade_lab import ROOT, load_data, run_experiments, split_data
 
 BOOTSTRAP_SEED = 2026
 BOOTSTRAP_REPLICATES = 10000
+BASELINE_RIDGE_REPLICATES = 1000
 SENSITIVITY_SEEDS = (7, 17, 27, 37, 47, 57, 67, 77, 87, 97)
 
 
@@ -37,6 +38,21 @@ def bootstrap_mae(actual, predictions, n_boot=BOOTSTRAP_REPLICATES, seed=BOOTSTR
     return pd.DataFrame(rows), samples
 
 
+def baseline_ridge_intervals(actual, predictions):
+    """Summarize fixed-test MAE spread for the two selected approaches."""
+    intervals, _ = bootstrap_mae(
+        actual,
+        {'Earlier grades': predictions['Earlier grades'],
+         'Study context only': predictions['Study context only']},
+        n_boot=BASELINE_RIDGE_REPLICATES,
+    )
+    intervals.insert(1, 'selected_model', ['Previous-grade baseline', 'Ridge regression'])
+    return intervals.assign(
+        test_rows=len(actual), resamples=BASELINE_RIDGE_REPLICATES,
+        bootstrap_seed=BOOTSTRAP_SEED,
+    )
+
+
 def save_robustness():
     df = load_data()
     _, _, _, predictions = run_experiments(df)
@@ -58,6 +74,9 @@ def save_robustness():
     out = ROOT / 'reports'
     out.mkdir(exist_ok=True)
     intervals.to_csv(out / 'bootstrap_intervals.csv', index=False)
+    baseline_ridge_intervals(test.G3, predictions).to_csv(
+        out / 'baseline_ridge_bootstrap.csv', index=False,
+    )
     runs.to_csv(out / 'split_sensitivity.csv', index=False)
     (out / 'paired_comparison.json').write_text(json.dumps(paired, indent=2) + '\n', encoding='utf-8')
     lines = ['# How stable are the results?', '', '## Fixed-test bootstrap', '',

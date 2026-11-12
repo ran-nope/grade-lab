@@ -3,9 +3,9 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from grade_lab import ROOT, load_data, run_experiments, split_data, predict_grade, fit_studio_models
-from robustness import bootstrap_mae
+from robustness import BASELINE_RIDGE_REPLICATES, BOOTSTRAP_SEED, baseline_ridge_intervals
 
-st.set_page_config(page_title='Grade Lab', page_icon='🧪', layout='wide')
+st.set_page_config(page_title='Grade Lab', layout='wide')
 st.caption('GRADE LAB / A SMALL DATASET, AN HONEST EXPERIMENT')
 st.title('Look beyond the average.')
 st.write('A simple rule won. Four difficult cases show what the average error leaves out.')
@@ -85,7 +85,8 @@ with evidence:
         st.dataframe(cv.round(3), hide_index=True)
     st.subheader('The cases behind the average')
     st.caption('Original selected grade-based approach: repeat G2. Marker area represents overlapping records; no points are jittered.')
-    audit = pd.DataFrame({'Actual': test.G3, 'Predicted': predictions['Earlier grades']})
+    audit = test[['G1', 'G2', 'G3']].rename(columns={'G3': 'Actual'})
+    audit['Predicted'] = predictions['Earlier grades']
     audit['Group'] = audit.Actual.eq(0).map({True: 'Zero final grade', False: 'Nonzero final grade'})
     points = audit.groupby(['Actual', 'Predicted', 'Group'], as_index=False).size().rename(columns={'size': 'Students'})
     scatter = alt.Chart(points).mark_circle(opacity=.8).encode(
@@ -100,10 +101,20 @@ with evidence:
     a.metric('Five zero-grade cases · MAE', f'{abs(audit.loc[zero, "Actual"] - audit.loc[zero, "Predicted"]).mean():.2f}')
     b.metric('Other 74 cases · MAE', f'{abs(audit.loc[~zero, "Actual"] - audit.loc[~zero, "Predicted"]).mean():.2f}')
     st.write('One zero-grade case was predicted correctly. Four were missed; two overlap at (0, 9). The data does not establish why those students received zero.')
+    st.markdown('**Held-out students with a final grade of zero**')
+    st.dataframe(audit.loc[zero, ['G1', 'G2', 'Predicted', 'Actual']], hide_index=True)
     st.subheader('How much does the estimate vary?')
-    intervals, _ = bootstrap_mae(test.G3, predictions)
-    st.dataframe(intervals.rename(columns={'ci_low': '95% lower', 'ci_high': '95% upper'}).round(2), hide_index=True)
-    st.caption('10,000 paired bootstrap resamples of these 79 test rows, seed 2026. Models are held fixed. These are intervals for average error, not individual predictions, and omit retraining, school clustering, and distribution-shift uncertainty.')
+    intervals = baseline_ridge_intervals(test.G3, predictions)
+    columns = {
+        'experiment': 'Inputs', 'selected_model': 'Selected model', 'test_mae': 'Test MAE',
+        'ci_low': '95% lower', 'ci_high': '95% upper',
+    }
+    st.dataframe(intervals[list(columns)].rename(columns=columns).round(2), hide_index=True)
+    st.caption(
+        f'95% percentile intervals from {BASELINE_RIDGE_REPLICATES:,} paired resamples '
+        f'of the {len(test)} test records (seed {BOOTSTRAP_SEED}). This measures resampling '
+        'spread in average error with fitted models held fixed. Future performance can differ.'
+    )
     sensitivity_path = ROOT / 'reports' / 'split_sensitivity.csv'
     if sensitivity_path.exists():
         with st.expander('Ten additional splits: all results, no seed shopping'):
