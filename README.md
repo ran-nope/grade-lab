@@ -173,3 +173,17 @@ tests/                       Leakage checks and app tests
 Dataset: Cortez, P. (2008). Student Performance. UCI Machine Learning Repository. https://doi.org/10.24432/C5TG7T, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The mathematics CSV is redistributed unchanged, and the aggregates and charts are derived from it. Details are in [data/README.md](data/README.md).
 
 Code is released under the [MIT license](LICENSE).
+
+<!-- same-feature:start -->
+## Same inputs, different models
+
+All three models receive G1 and G2 on the original seed-42 split. The previous-grade rule ignores G1 by definition. These are fixed alternatives, not models selected using test scores.
+
+| model | train_n | test_n | mae |
+|---|---|---|---|
+| Ridge regression | 316 | 79 | 1.254 |
+| Small decision tree | 316 | 79 | 1.525 |
+| Previous-grade baseline | 316 | 79 | 1.000 |
+
+The earlier context-only comparison is a **feature ablation**, not a same-input model comparison. [Cross-school stress test](reports/SCHOOL_HOLDOUT.md).
+<!-- same-feature:end -->
